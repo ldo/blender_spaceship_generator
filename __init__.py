@@ -1,28 +1,31 @@
-bl_info = {
-    "name": "Spaceship Generator",
-    "author": "Michael Davies",
-    "version": (1, 1, 3),
-    "blender": (2, 79, 0),
-    "location": "View3D > Add > Mesh",
-    "description": "Procedurally generate 3D spaceships from a random seed.",
-    "wiki_url": "https://github.com/a1studmuffin/SpaceshipGenerator/blob/master/README.md",
-    "tracker_url": "https://github.com/a1studmuffin/SpaceshipGenerator/issues",
-    "category": "Add Mesh"
-}
+bl_info = \
+    {
+        "name" : "Spaceship Generator",
+        "author" : "Michael Davies",
+        "version" : (1, 1, 3),
+        "blender" : (2, 79, 0),
+        "location" : "View3D > Add > Mesh",
+        "description" : "Procedurally generate 3D spaceships from a random seed.",
+        "wiki_url" : "https://github.com/a1studmuffin/SpaceshipGenerator/blob/master/README.md",
+        "tracker_url" : "https://github.com/a1studmuffin/SpaceshipGenerator/issues",
+        "category" : "Add Mesh",
+    }
 
-if "bpy" in locals():
+if "bpy" in locals() :
     # reload logic (magic)
     import importlib
     importlib.reload(spaceship_generator)
-else:
+else :
     from . import spaceship_generator
 #end if
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, IntProperty
-from bpy.types import Operator
+from bpy.props import \
+    BoolProperty, \
+    IntProperty, \
+    StringProperty
 
-class GenerateSpaceship(Operator):
+class GenerateSpaceship(bpy.types.Operator) :
     """Procedurally generate 3D spaceships from a random seed."""
     bl_idname = "mesh.generate_spaceship"
     bl_label = "Spaceship"
@@ -94,27 +97,36 @@ class GenerateSpaceship(Operator):
       )
     del df
 
-    def execute(self, context):
+    def execute(self, context) :
         spaceship_generator.generate_spaceship(self)
         return {'FINISHED'}
     #end execute
 
 #end GenerateSpaceship
 
-def menu_func(self, context):
-    self.layout.operator(GenerateSpaceship.bl_idname, text="Spaceship")
+_classes_ = \
+    (
+        GenerateSpaceship,
+    )
+
+def menu_func(self, context) :
+    self.layout.operator(GenerateSpaceship.bl_idname, text = "Spaceship")
 #end menu_func
 
-def register():
-    bpy.utils.register_module(__name__)
+def register() :
+    for ċlass in _classes_ :
+        bpy.utils.register_class(ċlass)
+    #end for
     bpy.types.INFO_MT_mesh_add.append(menu_func)
 #end register
 
-def unregister():
-    bpy.utils.unregister_module(__name__)
+def unregister() :
     bpy.types.INFO_MT_mesh_add.remove(menu_func)
+    for ċlass in _classes_ :
+        bpy.utils.unregister_class(ċlass)
+    #end for
 #end unregister
 
-if __name__ == "__main__":
+if __name__ == "__main__" :
     register()
 #end if
