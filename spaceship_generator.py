@@ -173,13 +173,13 @@ def add_exhaust_to_face(bm, face) :
     for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
             if is_rear_face(face) :
-                face.material_index = Material.hull_dark
+                face.material_index = MATERIAL.HULL_DARK
                 face = extrude_face(bm, face, exhaust_length)
                 scale_face(bm, face, scale_outer, scale_outer, scale_outer)
                 extruded_face_list = []
                 face = extrude_face(bm, face, -exhaust_length * 0.9, extruded_face_list)
                 for extruded_face in extruded_face_list :
-                    extruded_face.material_index = Material.exhaust_burn
+                    extruded_face.material_index = MATERIAL.EXHAUST_BURN
                 #end for
                 scale_face(bm, face, scale_inner, scale_inner, scale_inner)
             #end if
@@ -205,7 +205,7 @@ def add_grid_to_face(bm, face) :
     scale = 0.8
     for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
-            material_index = Material.hull_lights if random() > 0.5 else Material.hull
+            material_index = MATERIAL.HULL_LIGHTS if random() > 0.5 else MATERIAL.HULL
             extruded_face_list = []
             face = extrude_face(bm, face, grid_length, extruded_face_list)
             for extruded_face in extruded_face_list :
@@ -434,7 +434,7 @@ def add_sphere_to_face(bm, face) :
       )
     for vert in result["verts"] :
         for face in vert.link_faces :
-            face.material_index = Material.hull
+            face.material_index = MATERIAL.HULL
         #end for
     #end for
 #end add_sphere_to_face
@@ -464,7 +464,7 @@ def add_surface_antenna_to_face(bm, face) :
                 depth = uniform(0.1, 1.5) * face_size
                 depth_short = depth * uniform(0.02, 0.15)
                 base_diameter = uniform(0.005, 0.05)
-                material_index = Material.hull if random() > 0.5 else Material.hull_dark
+                material_index = MATERIAL.HULL if random() > 0.5 else MATERIAL.HULL_DARK
 
                 # Spire
                 num_segments = uniform(3, 6)
@@ -538,18 +538,18 @@ def add_disc_to_face(bm, face) :
       )
     for vert in result["verts"] :
         for face in vert.link_faces :
-            face.material_index = Material.glow_disc
+            face.material_index = MATERIAL.GLOW_DISC
         #end for
     #end for
 #end add_disc_to_face
 
-class Material(IntEnum) :
-    hull = 0            # Plain spaceship hull
-    hull_lights = 1     # Spaceship hull with emissive windows
-    hull_dark = 2       # Plain Spaceship hull, darkened
-    exhaust_burn = 3    # Emissive engine burn material
-    glow_disc = 4       # Emissive landing pad disc material
-#end Material
+class MATERIAL(IntEnum) :
+    HULL = 0            # Plain spaceship hull
+    HULL_LIGHTS = 1     # Spaceship hull with emissive windows
+    HULL_DARK = 2       # Plain Spaceship hull, darkened
+    EXHAUST_BURN = 3    # Emissive engine burn material
+    GLOW_DISC = 4       # Emissive landing pad disc material
+#end MATERIAL
 
 # Creates an image texture given a texture name and filename relative to my
 # “textures” subdirectory.
@@ -585,8 +585,8 @@ def set_hull_mat_basics(mat, color, hull_normal_colortex) :
 # Creates all our materials and returns them as a list.
 def create_materials() :
     ret = []
-    for material in Material :
-        ret.append(bpy.data.materials.new(material.name))
+    for material in MATERIAL :
+        ret.append(bpy.data.materials.new(material.name.lower()))
     #end for
 
     # Choose a base color for the spaceship hull
@@ -605,11 +605,11 @@ def create_materials() :
     hull_normal_colortex.use_normal_map = True
 
     # Build the hull texture
-    mat = ret[Material.hull]
+    mat = ret[MATERIAL.HULL]
     set_hull_mat_basics(mat, hull_base_color, hull_normal_colortex)
 
     # Build the hull_lights texture
-    mat = ret[Material.hull_lights]
+    mat = ret[MATERIAL.HULL_LIGHTS]
     set_hull_mat_basics(mat, hull_base_color, hull_normal_colortex)
 
     # Add a diffuse layer that sets the window color
@@ -642,19 +642,19 @@ def create_materials() :
     mtex.use_map_color_diffuse = False
 
     # Build the hull_dark texture
-    mat = ret[Material.hull_dark]
+    mat = ret[MATERIAL.HULL_DARK]
     set_hull_mat_basics(mat, [0.3 * x for x in hull_base_color], hull_normal_colortex)
 
     # Choose a glow color for the exhaust + glow discs
     glow_color = hls_to_rgb(h = random(), l = uniform(0.5, 1), s = 1)
 
     # Build the exhaust_burn texture
-    mat = ret[Material.exhaust_burn]
+    mat = ret[MATERIAL.EXHAUST_BURN]
     mat.diffuse_color = glow_color
     mat.emit = 1.0
 
     # Build the glow_disc texture
-    mat = ret[Material.glow_disc]
+    mat = ret[MATERIAL.GLOW_DISC]
     mat.diffuse_color = glow_color
     mat.emit = 1.0
 
@@ -836,16 +836,16 @@ def generate_spaceship(parms) :
                 elif val > 0.25 :
                     grid_faces.append(face)
                 else :
-                    face.material_index = Material.hull_lights
+                    face.material_index = MATERIAL.HULL_LIGHTS
                 #end if
             elif face.normal.x > 0.9 :  # front face
                 if face.normal.dot(face.calc_center_bounds()) > 0 and val > 0.7 :
                     antenna_faces.append(face)  # front facing antenna
-                    face.material_index = Material.hull_lights
+                    face.material_index = MATERIAL.HULL_LIGHTS
                 elif val > 0.4 :
                     grid_faces.append(face)
                 else :
-                    face.material_index = Material.hull_lights
+                    face.material_index = MATERIAL.HULL_LIGHTS
                 #end if
             elif face.normal.z > 0.9 :  # top face
                 if face.normal.dot(face.calc_center_bounds()) > 0 and val > 0.7 :
@@ -871,7 +871,7 @@ def generate_spaceship(parms) :
                 elif val > 0.4 :
                     sphere_faces.append(face)
                 else :
-                    face.material_index = Material.hull_lights
+                    face.material_index = MATERIAL.HULL_LIGHTS
                 #end if
             #end if
 
