@@ -562,11 +562,12 @@ class MATERIAL(IntEnum) :
     GLOW_DISC = 4       # Emissive landing pad disc material
 #end MATERIAL
 
-# Creates an image texture given a texture name and filename relative to my
+# Creates an image texture given filename relative to my
 # “textures” subdirectory.
-def create_texture(name, filename, use_alpha = True) :
-    filename = resource_path("textures", filename)
-    img = bpy.data.images.load(filename)
+def create_texture(filename, use_alpha) :
+    name = os.path.splitext(filename)[0]
+    filepath = resource_path("textures", filename)
+    img = bpy.data.images.load(filepath)
     img.use_alpha = use_alpha
     img.pack()
     tex = bpy.data.textures.new(name, "IMAGE")
@@ -608,11 +609,7 @@ def create_materials() :
         s = uniform(0, 0.25)
       )
     # Load up the hull normal map
-    hull_normal_colortex = create_texture \
-      (
-        name = "ColorTex",
-        filename = "hull_normal.png"
-      )
+    hull_normal_colortex = create_texture("hull_normal.png", True)
     hull_normal_colortex.use_normal_map = True
 
     # Build the hull texture
@@ -625,11 +622,7 @@ def create_materials() :
 
     # Add a diffuse layer that sets the window color
     mtex = mat.texture_slots.add()
-    mtex.texture = create_texture \
-      (
-        name = "ColorTex",
-        filename = "hull_lights_diffuse.png"
-      )
+    mtex.texture = create_texture("hull_lights_diffuse.png", True)
     mtex.texture_coords = "GLOBAL"
     mtex.mapping = "CUBE"
     mtex.blend_type = "ADD"
@@ -639,12 +632,7 @@ def create_materials() :
 
     # Add an emissive layer that lights up the windows
     mtex = mat.texture_slots.add()
-    mtex.texture = create_texture \
-      (
-        name = "ColorTex",
-        filename = "hull_lights_emit.png",
-        use_alpha = False
-      )
+    mtex.texture = create_texture("hull_lights_emit.png", False)
     mtex.texture_coords = "GLOBAL"
     mtex.mapping = "CUBE"
     mtex.use_map_emit = True
@@ -664,7 +652,7 @@ def create_materials() :
     mat.diffuse_color = glow_color
     mat.emit = 1.0
 
-    # Build the glow_disc texture
+    # Build the glow_disc texture -- not used anywhere?
     mat = ret[MATERIAL.GLOW_DISC]
     mat.diffuse_color = glow_color
     mat.emit = 1.0
