@@ -558,7 +558,7 @@ class Material(IntEnum) :
 img_cache = {}
 def create_texture(name, filename, use_alpha = True) :
     filename = resource_path("textures", filename)
-    if filename in img_cache :
+    if (filename, use_alpha) in img_cache :
         # Image has been cached already, so just use that.
         img = img_cache[(filename, use_alpha)]
     else :
