@@ -131,7 +131,7 @@ def is_rear_face(face):
 def add_exhaust_to_face(bm, face):
     if not face.is_valid:
         return
-    
+
     # The more square the face is, the more grid divisions it might have
     num_cuts = randint(1, int(4 - get_aspect_ratio(face)))
     result = bmesh.ops.subdivide_edges(bm,
@@ -139,7 +139,7 @@ def add_exhaust_to_face(bm, face):
                                     cuts=num_cuts,
                                     fractal=0.02,
                                     use_grid_fill=True)
-                                    
+
     exhaust_length = uniform(0.1, 0.2)
     scale_outer = 1 / uniform(1.3, 1.6)
     scale_inner = 1 / uniform(1.05, 1.1)
@@ -413,10 +413,10 @@ def create_texture(name, tex_type, filename, use_alpha=True):
 
         img.use_alpha = use_alpha
         img.pack()
-        
+
         # Cache the asset
         img_cache[(filename, use_alpha)] = img
-    
+
     # Create and return a new texture using img
     tex = bpy.data.textures.new(name, tex_type)
     tex.image = img
@@ -444,7 +444,7 @@ def create_materials():
     ret = []
     for material in Material:
         ret.append(bpy.data.materials.new(material.name))
-    
+
     # Choose a base color for the spaceship hull
     hull_base_color = hls_to_rgb(
         random(), uniform(0.05, 0.5), uniform(0, 0.25))
@@ -490,7 +490,7 @@ def create_materials():
 
     # Choose a glow color for the exhaust + glow discs
     glow_color = hls_to_rgb(random(), uniform(0.5, 1), 1)
-    
+
     # Build the exhaust_burn texture
     mat = ret[Material.exhaust_burn]
     mat.diffuse_color = glow_color
@@ -607,7 +607,7 @@ def generate_spaceship(random_seed='',
             # Skip any long thin faces as it'll probably look stupid
             if get_aspect_ratio(face) > 3:
                 continue
-                
+
             # Spin the wheel! Let's categorize + assign some materials
             val = random()
             if is_rear_face(face):  # rear face
@@ -717,15 +717,15 @@ def generate_spaceship(random_seed='',
             me.materials.append(mat)
         else:
             me.materials.append(bpy.data.materials.new(name="Material"))
-    
+
     return obj
 
 if __name__ == "__main__":
-    
+
     # When true, this script will generate a single spaceship in the scene.
     # When false, this script will render multiple movie frames showcasing lots of ships.
     generate_single_spaceship = True
-    
+
     if generate_single_spaceship:
         # Reset the scene, generate a single spaceship and focus on it
         reset_scene()
@@ -797,7 +797,7 @@ if __name__ == "__main__":
                                      sin(radians(camera_pole_pitch))*camera_pole_length)
             if camera_refocus_object_every_frame:
                 bpy.ops.view3d.camera_to_view_selected()
-            
+
             # Render the scene to disk
             script_path = bpy.context.space_data.text.filepath if bpy.context.space_data else __file__
             folder = output_path if output_path else os.path.split(os.path.realpath(script_path))[0]
