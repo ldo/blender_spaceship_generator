@@ -12,11 +12,22 @@ import os
 import bpy
 import bmesh
 import datetime
-from math import sqrt, radians, cos, sin
-from mathutils import Vector, Matrix
-from random import random, seed, uniform, randint, randrange
-from enum import IntEnum
-from colorsys import hls_to_rgb
+import math
+from mathutils import \
+    Matrix, \
+    Vector
+from random import \
+    random, \
+    seed, \
+    uniform, \
+    randint, \
+    randrange
+from enum import \
+    IntEnum
+from colorsys import \
+    hls_to_rgb
+
+deg = math.pi / 180 # conversion factor
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -255,7 +266,7 @@ def add_cylinders_to_face(bm, face) :
               (
                     get_face_matrix(face, pos)
                 *
-                    Matrix.Rotation(radians(90), 3, "X").to_4x4()
+                    Matrix.Rotation(90 * deg, 3, "X").to_4x4()
               )
             bmesh.ops.create_cone \
               (
@@ -310,7 +321,7 @@ def add_weapons_to_face(bm, face) :
               (
                     get_face_matrix(face, pos + face.normal * weapon_depth * 0.5)
                 *
-                    Matrix.Rotation(radians(uniform(0, 90)), 3, "Z").to_4x4()
+                    Matrix.Rotation(uniform(0, 90) * deg, 3, "Z").to_4x4()
               )
 
             # Turret foundation
@@ -338,7 +349,7 @@ def add_weapons_to_face(bm, face) :
                 matrix =
                         face_matrix
                     *
-                        Matrix.Rotation(radians(90), 3, "Y").to_4x4()
+                        Matrix.Rotation(90 * deg, 3, "Y").to_4x4()
                     *
                         Matrix.Translation(Vector((0, 0, weapon_size * 0.6))).to_4x4()
               )
@@ -355,17 +366,17 @@ def add_weapons_to_face(bm, face) :
                 matrix =
                         face_matrix
                     *
-                        Matrix.Rotation(radians(90), 3, "Y").to_4x4()
+                        Matrix.Rotation(90 * deg, 3, "Y").to_4x4()
                     *
                         Matrix.Translation(Vector((0, 0, weapon_size * -0.6))).to_4x4()
               )
             # Turret housing
-            upward_angle = uniform(0, 45)
+            upward_angle = uniform(0, 45) * deg
             turret_house_mat = \
               (
                     face_matrix
                 *
-                    Matrix.Rotation(radians(upward_angle), 3, "X").to_4x4()
+                    Matrix.Rotation(upward_angle, 3, "X").to_4x4()
                 *
                     Matrix.Translation(Vector((0, weapon_size * -0.4, 0))).to_4x4()
               )
@@ -460,7 +471,7 @@ def add_surface_antenna_to_face(bm, face) :
         for v in range(vertical_step) :
             if random() > 0.9 :
                 pos = top.lerp(bottom, (v + 1) / (vertical_step + 1))
-                face_size = sqrt(face.calc_area())
+                face_size = math.sqrt(face.calc_area())
                 depth = uniform(0.1, 1.5) * face_size
                 depth_short = depth * uniform(0.02, 0.15)
                 base_diameter = uniform(0.005, 0.05)
@@ -752,7 +763,7 @@ def generate_spaceship(parms) :
 
                     # Maybe add some rotation around Y axis
                     if random() > 0.5 :
-                        angle = 5
+                        angle = 5 * deg
                         if random() > 0.5 :
                             angle = -angle
                         #end if
@@ -761,7 +772,7 @@ def generate_spaceship(parms) :
                             bm,
                             verts = face.verts,
                             cent = (0, 0, 0),
-                            matrix = Matrix.Rotation(radians(angle), 3, "Y")
+                            matrix = Matrix.Rotation(angle, 3, "Y")
                           )
                     #end if
                 else : #  val <= 0.1
@@ -981,15 +992,15 @@ if __name__ == "__main__" :
         output_path = "" # leave empty to use script folder
         total_movie_duration = 16
         total_spaceship_duration = 1
-        yaw_rate = 45 # degrees/sec
-        yaw_offset = 220 # degrees/sec
+        yaw_rate = 45 * deg # angle/sec
+        yaw_offset = 220 * deg # angle/sec
         camera_pole_rate = 1
-        camera_pole_pitch_min = 15 # degrees
-        camera_pole_pitch_max = 30 # degrees
-        camera_pole_pitch_offset = 0 # degrees
+        camera_pole_pitch_min = 15 * deg
+        camera_pole_pitch_max = 30 * deg
+        camera_pole_pitch_offset = 0 * deg
         camera_pole_length = 10
         camera_refocus_object_every_frame = False
-        fov = 60 # degrees
+        fov = 60 * deg
         fps = 30
         res_x = 1920
         res_y = 1080
@@ -1002,7 +1013,7 @@ if __name__ == "__main__" :
         scene.render.resolution_x = res_x
         scene.render.resolution_y = res_y
         scene.camera.rotation_mode = "XYZ"
-        scene.camera.data.angle = radians(fov)
+        scene.camera.data.angle = fov
         frame = 0
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         while movie_duration < total_movie_duration :
@@ -1025,8 +1036,8 @@ if __name__ == "__main__" :
             #end if
 
             # Position and orient the camera
-            rad = radians(yaw_offset + yaw_rate * movie_duration)
-            camera_pole_pitch_lerp = 0.5 * (1 + cos(camera_pole_rate * movie_duration)) # 0-1
+            yaw = yaw_offset + yaw_rate * movie_duration
+            camera_pole_pitch_lerp = 0.5 * (1 + math.cos(camera_pole_rate * movie_duration)) # 0-1
             camera_pole_pitch = \
               (
                     camera_pole_pitch_max * camera_pole_pitch_lerp
@@ -1035,15 +1046,15 @@ if __name__ == "__main__" :
               )
             scene.camera.rotation_euler = \
                 (
-                    radians(90 - camera_pole_pitch + camera_pole_pitch_offset),
+                    90 * deg - camera_pole_pitch + camera_pole_pitch_offset,
                     0,
-                    rad
+                    yaw
                 )
             scene.camera.location = \
                 (
-                    sin(rad) * camera_pole_length,
-                    cos(rad) * -camera_pole_length,
-                    sin(radians(camera_pole_pitch)) * camera_pole_length
+                    math.sin(yaw) * camera_pole_length,
+                    math.cos(yaw) * -camera_pole_length,
+                    math.sin(camera_pole_pitch) * camera_pole_length
                 )
             if camera_refocus_object_every_frame :
                 bpy.ops.view3d.camera_to_view_selected()
