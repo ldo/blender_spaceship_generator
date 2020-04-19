@@ -686,7 +686,7 @@ class parms_defaults :
     create_face_detail = True
     allow_horizontal_symmetry = True
     allow_vertical_symmetry = False
-    apply_bevel_modifier = True
+    add_bevel_modifier = True
     assign_materials = True
 #end parms_defaults
 
@@ -944,7 +944,7 @@ def generate_spaceship(parms) :
     ob.location = (0, 0, 0)
 
     # Add a fairly broad bevel modifier to angularize shape
-    if parms.apply_bevel_modifier :
+    if parms.add_bevel_modifier :
         bevel_modifier = ob.modifiers.new("Bevel", "BEVEL")
         bevel_modifier.width = uniform(5, 20)
         bevel_modifier.offset_type = "PERCENT"
