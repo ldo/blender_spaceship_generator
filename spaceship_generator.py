@@ -27,7 +27,7 @@ def resource_path(*path_components) :
 # Deletes all existing spaceships and unused materials from the scene
 def reset_scene() :
     for item in bpy.data.objects :
-        item.select = item.name.startswith('Spaceship')
+        item.select = item.name.startswith("Spaceship")
     #end for
     bpy.ops.object.delete()
     for material in bpy.data.materials :
@@ -46,7 +46,7 @@ def reset_scene() :
 # Returns the new face, and optionally fills out extruded_face_list
 # with all the additional side faces created from the extrusion.
 def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) :
-    new_faces = bmesh.ops.extrude_discrete_faces(bm, faces = [face])['faces']
+    new_faces = bmesh.ops.extrude_discrete_faces(bm, faces = [face])["faces"]
     if extruded_face_list != None :
         extruded_face_list += new_faces[:]
     #end if
@@ -170,7 +170,7 @@ def add_exhaust_to_face(bm, face) :
     exhaust_length = uniform(0.1, 0.2)
     scale_outer = 1 / uniform(1.3, 1.6)
     scale_inner = 1 / uniform(1.05, 1.1)
-    for face in result['geom'] :
+    for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
             if is_rear_face(face) :
                 face.material_index = Material.hull_dark
@@ -203,7 +203,7 @@ def add_grid_to_face(bm, face) :
       )
     grid_length = uniform(0.025, 0.15)
     scale = 0.8
-    for face in result['geom'] :
+    for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
             material_index = Material.hull_lights if random() > 0.5 else Material.hull
             extruded_face_list = []
@@ -255,7 +255,7 @@ def add_cylinders_to_face(bm, face) :
               (
                     get_face_matrix(face, pos)
                 *
-                    Matrix.Rotation(radians(90), 3, 'X').to_4x4()
+                    Matrix.Rotation(radians(90), 3, "X").to_4x4()
               )
             bmesh.ops.create_cone \
               (
@@ -310,7 +310,7 @@ def add_weapons_to_face(bm, face) :
               (
                     get_face_matrix(face, pos + face.normal * weapon_depth * 0.5)
                 *
-                    Matrix.Rotation(radians(uniform(0, 90)), 3, 'Z').to_4x4()
+                    Matrix.Rotation(radians(uniform(0, 90)), 3, "Z").to_4x4()
               )
 
             # Turret foundation
@@ -338,7 +338,7 @@ def add_weapons_to_face(bm, face) :
                 matrix =
                         face_matrix
                     *
-                        Matrix.Rotation(radians(90), 3, 'Y').to_4x4()
+                        Matrix.Rotation(radians(90), 3, "Y").to_4x4()
                     *
                         Matrix.Translation(Vector((0, 0, weapon_size * 0.6))).to_4x4()
               )
@@ -355,7 +355,7 @@ def add_weapons_to_face(bm, face) :
                 matrix =
                         face_matrix
                     *
-                        Matrix.Rotation(radians(90), 3, 'Y').to_4x4()
+                        Matrix.Rotation(radians(90), 3, "Y").to_4x4()
                     *
                         Matrix.Translation(Vector((0, 0, weapon_size * -0.6))).to_4x4()
               )
@@ -365,7 +365,7 @@ def add_weapons_to_face(bm, face) :
               (
                     face_matrix
                 *
-                    Matrix.Rotation(radians(upward_angle), 3, 'X').to_4x4()
+                    Matrix.Rotation(radians(upward_angle), 3, "X").to_4x4()
                 *
                     Matrix.Translation(Vector((0, weapon_size * -0.4, 0))).to_4x4()
               )
@@ -432,7 +432,7 @@ def add_sphere_to_face(bm, face) :
         diameter = sphere_size,
         matrix = sphere_matrix
       )
-    for vert in result['verts'] :
+    for vert in result["verts"] :
         for face in vert.link_faces :
             face.material_index = Material.hull
         #end for
@@ -479,7 +479,7 @@ def add_surface_antenna_to_face(bm, face) :
                     depth = depth,
                     matrix = get_face_matrix(face, pos + face.normal * depth * 0.5)
                   )
-                for vert in result['verts'] :
+                for vert in result["verts"] :
                     for vert_face in vert.link_faces :
                         vert_face.material_index = material_index
                     #end for
@@ -497,7 +497,7 @@ def add_surface_antenna_to_face(bm, face) :
                     depth = depth_short,
                     matrix = get_face_matrix(face, pos + face.normal * depth_short * 0.45)
                   )
-                for vert in result['verts'] :
+                for vert in result["verts"] :
                     for vert_face in vert.link_faces :
                         vert_face.material_index = material_index
                     #end for
@@ -536,7 +536,7 @@ def add_disc_to_face(bm, face) :
         depth = 0.0,
         matrix = get_face_matrix(face, face.calc_center_bounds() + face.normal * depth * 1.05)
       )
-    for vert in result['verts'] :
+    for vert in result["verts"] :
         for face in vert.link_faces :
             face.material_index = Material.glow_disc
         #end for
@@ -578,12 +578,12 @@ def create_texture(name, tex_type, filename, use_alpha = True) :
 def add_hull_normal_map(mat, hull_normal_colortex) :
     mtex = mat.texture_slots.add()
     mtex.texture = hull_normal_colortex
-    mtex.texture_coords = 'GLOBAL' # global UVs, yolo
-    mtex.mapping = 'CUBE'
+    mtex.texture_coords = "GLOBAL" # global UVs, yolo
+    mtex.mapping = "CUBE"
     mtex.use_map_color_diffuse = False
     mtex.use_map_normal = True
     mtex.normal_factor = 1
-    mtex.bump_method = 'BUMP_BEST_QUALITY'
+    mtex.bump_method = "BUMP_BEST_QUALITY"
 #end add_hull_normal_map
 
 # Sets some basic properties for a hull material.
@@ -610,9 +610,9 @@ def create_materials() :
     # Load up the hull normal map
     hull_normal_colortex = create_texture \
       (
-        name = 'ColorTex',
-        tex_type = 'IMAGE',
-        filename = resource_path('textures', 'hull_normal.png')
+        name = "ColorTex",
+        tex_type = "IMAGE",
+        filename = resource_path("textures", "hull_normal.png")
       )
     hull_normal_colortex.use_normal_map = True
 
@@ -628,13 +628,13 @@ def create_materials() :
     mtex = mat.texture_slots.add()
     mtex.texture = create_texture \
       (
-        name = 'ColorTex',
-        tex_type = 'IMAGE',
-        filename = resource_path('textures', 'hull_lights_diffuse.png')
+        name = "ColorTex",
+        tex_type = "IMAGE",
+        filename = resource_path("textures", "hull_lights_diffuse.png")
       )
-    mtex.texture_coords = 'GLOBAL'
-    mtex.mapping = 'CUBE'
-    mtex.blend_type = 'ADD'
+    mtex.texture_coords = "GLOBAL"
+    mtex.mapping = "CUBE"
+    mtex.blend_type = "ADD"
     mtex.use_map_color_diffuse = True
     mtex.use_rgb_to_intensity = True
     mtex.color = hls_to_rgb(h = random(), l = uniform(0.5, 1), s = uniform(0, 0.5))
@@ -643,16 +643,16 @@ def create_materials() :
     mtex = mat.texture_slots.add()
     mtex.texture = create_texture \
       (
-        name = 'ColorTex',
-        tex_type = 'IMAGE',
-        filename = resource_path('textures', 'hull_lights_emit.png'),
+        name = "ColorTex",
+        tex_type = "IMAGE",
+        filename = resource_path("textures", "hull_lights_emit.png"),
         use_alpha = False
       )
-    mtex.texture_coords = 'GLOBAL'
-    mtex.mapping = 'CUBE'
+    mtex.texture_coords = "GLOBAL"
+    mtex.mapping = "CUBE"
     mtex.use_map_emit = True
     mtex.emit_factor = 2.0
-    mtex.blend_type = 'ADD'
+    mtex.blend_type = "ADD"
     mtex.use_map_color_diffuse = False
 
     # Build the hull_dark texture
@@ -775,7 +775,7 @@ def generate_spaceship(parms) :
                             bm,
                             verts = face.verts,
                             cent = (0, 0, 0),
-                            matrix = Matrix.Rotation(radians(angle), 3, 'Y')
+                            matrix = Matrix.Rotation(radians(angle), 3, "Y")
                           )
                     #end if
                 else : #  val <= 0.1
@@ -926,31 +926,31 @@ def generate_spaceship(parms) :
     #end if
 
     # Finish up, write the bmesh into a new mesh
-    me = bpy.data.meshes.new('Mesh')
+    me = bpy.data.meshes.new("Mesh")
     bm.to_mesh(me)
     bm.free()
 
     # Add the mesh to the scene
     scene = bpy.context.scene
-    obj = bpy.data.objects.new('Spaceship', me)
+    obj = bpy.data.objects.new("Spaceship", me)
     scene.objects.link(obj)
     # Select and make active
     scene.objects.active = obj
     obj.select = True
 
     # Recenter the object to its center of mass
-    bpy.ops.object.origin_set(type = 'ORIGIN_CENTER_OF_MASS')
+    bpy.ops.object.origin_set(type = "ORIGIN_CENTER_OF_MASS")
     ob = bpy.context.object
     ob.location = (0, 0, 0)
 
     # Add a fairly broad bevel modifier to angularize shape
     if parms.apply_bevel_modifier :
-        bevel_modifier = ob.modifiers.new('Bevel', 'BEVEL')
+        bevel_modifier = ob.modifiers.new("Bevel", "BEVEL")
         bevel_modifier.width = uniform(5, 20)
-        bevel_modifier.offset_type = 'PERCENT'
+        bevel_modifier.offset_type = "PERCENT"
         bevel_modifier.segments = 2
         bevel_modifier.profile = 0.25
-        bevel_modifier.limit_method = 'NONE'
+        bevel_modifier.limit_method = "NONE"
     #end if
 
     # Add materials to the spaceship
@@ -976,15 +976,15 @@ if __name__ == "__main__" :
     if generate_single_spaceship :
         # Reset the scene, generate a single spaceship and focus on it
         reset_scene()
-        parms_defaults.random_seed = '' # add anything here to generate the same spaceship
+        parms_defaults.random_seed = "" # add anything here to generate the same spaceship
         obj = generate_spaceship(parms_defaults)
 
         # View the selected object in all views
         for area in bpy.context.screen.areas :
-            if area.type == 'VIEW_3D' :
+            if area.type == "VIEW_3D" :
                 ctx = bpy.context.copy()
-                ctx['area'] = area
-                ctx['region'] = area.regions[-1]
+                ctx["area"] = area
+                ctx["region"] = area.regions[-1]
                 bpy.ops.view3d.view_selected(ctx)
             #end if
         #end for
@@ -992,7 +992,7 @@ if __name__ == "__main__" :
         # Export a movie showcasing many different kinds of ships
 
         # Settings
-        output_path = '' # leave empty to use script folder
+        output_path = "" # leave empty to use script folder
         total_movie_duration = 16
         total_spaceship_duration = 1
         yaw_rate = 45 # degrees/sec
@@ -1015,10 +1015,10 @@ if __name__ == "__main__" :
         scene = bpy.data.scenes["Scene"]
         scene.render.resolution_x = res_x
         scene.render.resolution_y = res_y
-        scene.camera.rotation_mode = 'XYZ'
+        scene.camera.rotation_mode = "XYZ"
         scene.camera.data.angle = radians(fov)
         frame = 0
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         while movie_duration < total_movie_duration :
             movie_duration += inv_fps
             spaceship_duration += inv_fps
@@ -1032,7 +1032,7 @@ if __name__ == "__main__" :
                 # look for a mirror plane in the scene, and position it
                 # just underneath the ship if found
                 lowest_z = centre = min((Vector(b).z for b in obj.bound_box))
-                plane_obj = bpy.data.objects['Plane'] if 'Plane' in bpy.data.objects else None
+                plane_obj = bpy.data.objects.get("Plane")
                 if plane_obj :
                     plane_obj.location.z = lowest_z - 0.3
                 #end if
@@ -1068,12 +1068,12 @@ if __name__ == "__main__" :
             folder = output_path if output_path else os.path.split(os.path.realpath(script_path))[0]
             filename = os.path.join \
               (
-                'renders',
+                "renders",
                 timestamp,
-                timestamp + '_' + str(frame).zfill(5) + '.png'
+                timestamp + "_" + str(frame).zfill(5) + ".png"
               )
-            bpy.data.scenes['Scene'].render.filepath = os.path.join(folder, filename)
-            print('Rendering frame ' + str(frame) + '...')
+            bpy.data.scenes["Scene"].render.filepath = os.path.join(folder, filename)
+            print("Rendering frame " + str(frame) + "...")
             bpy.ops.render.render(write_still = True)
             frame += 1
         #end while movie_duration < total_movie_duration

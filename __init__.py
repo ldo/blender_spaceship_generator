@@ -29,77 +29,77 @@ class GenerateSpaceship(bpy.types.Operator) :
     """Procedurally generate 3D spaceships from a random seed."""
     bl_idname = "mesh.generate_spaceship"
     bl_label = "Spaceship"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {"REGISTER", "UNDO"}
 
     df = spaceship_generator.parms_defaults # temp short name
     random_seed = StringProperty \
       (
         default = df.random_seed,
-        name = 'Seed'
+        name = "Seed"
       )
     num_hull_segments_min = IntProperty \
       (
         default = df.num_hull_segments_min,
         min = 0,
         soft_max = 16,
-        name = 'Min. Hull Segments'
+        name = "Min. Hull Segments"
       )
     num_hull_segments_max = IntProperty \
       (
         default = df.num_hull_segments_max,
         min = 0,
         soft_max = 16,
-        name = 'Max. Hull Segments'
+        name = "Max. Hull Segments"
       )
     create_asymmetry_segments = BoolProperty \
       (
         default = df.create_asymmetry_segments,
-        name = 'Create Asymmetry Segments'
+        name = "Create Asymmetry Segments"
       )
     num_asymmetry_segments_min = IntProperty \
       (
         default = df.num_asymmetry_segments_min,
         min = 1,
         soft_max = 16,
-        name = 'Min. Asymmetry Segments'
+        name = "Min. Asymmetry Segments"
       )
     num_asymmetry_segments_max = IntProperty \
       (
         default = df.num_asymmetry_segments_max,
         min = 1,
         soft_max = 16,
-        name = 'Max. Asymmetry Segments'
+        name = "Max. Asymmetry Segments"
       )
     create_face_detail = BoolProperty \
       (
         default = df.create_face_detail,
-        name = 'Create Face Detail'
+        name = "Create Face Detail"
       )
     allow_horizontal_symmetry = BoolProperty \
       (
         default = df.allow_horizontal_symmetry,
-        name = 'Allow Horizontal Symmetry'
+        name = "Allow Horizontal Symmetry"
       )
     allow_vertical_symmetry = BoolProperty \
       (
         default = df.allow_vertical_symmetry,
-        name='Allow Vertical Symmetry'
+        name="Allow Vertical Symmetry"
       )
     apply_bevel_modifier = BoolProperty \
       (
         default = df.apply_bevel_modifier,
-        name = 'Apply Bevel Modifier'
+        name = "Apply Bevel Modifier"
       )
     assign_materials = BoolProperty \
       (
         default = df.assign_materials,
-        name = 'Assign Materials'
+        name = "Assign Materials"
       )
     del df
 
     def execute(self, context) :
         spaceship_generator.generate_spaceship(self)
-        return {'FINISHED'}
+        return {"FINISHED"}
     #end execute
 
 #end GenerateSpaceship
