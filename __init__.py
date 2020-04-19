@@ -16,6 +16,7 @@ if "bpy" in locals():
     importlib.reload(spaceship_generator)
 else:
     from . import spaceship_generator
+#end if
 
 import bpy
 from bpy.props import StringProperty, BoolProperty, IntProperty
@@ -96,17 +97,24 @@ class GenerateSpaceship(Operator):
     def execute(self, context):
         spaceship_generator.generate_spaceship(self)
         return {'FINISHED'}
+    #end execute
+
+#end GenerateSpaceship
 
 def menu_func(self, context):
     self.layout.operator(GenerateSpaceship.bl_idname, text="Spaceship")
+#end menu_func
 
 def register():
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_mesh_add.append(menu_func)
+#end register
 
 def unregister():
     bpy.utils.unregister_module(__name__)
     bpy.types.INFO_MT_mesh_add.remove(menu_func)
+#end unregister
 
 if __name__ == "__main__":
     register()
+#end if
