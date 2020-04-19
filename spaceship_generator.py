@@ -551,11 +551,13 @@ class Material(IntEnum) :
     glow_disc = 4       # Emissive landing pad disc material
 #end Material
 
-# Creates a texture given a texture name, texture type, and filename.
+# Creates an image texture given a texture name and filename relative to my
+# “textures” subdirectory.
 # Uses an image cache dictionary to prevent loading the same asset from disk twice.
 # Returns the texture.
 img_cache = {}
-def create_texture(name, tex_type, filename, use_alpha = True) :
+def create_texture(name, filename, use_alpha = True) :
+    filename = resource_path("textures", filename)
     if filename in img_cache :
         # Image has been cached already, so just use that.
         img = img_cache[(filename, use_alpha)]
@@ -569,7 +571,7 @@ def create_texture(name, tex_type, filename, use_alpha = True) :
     #end if
 
     # Create and return a new texture using img
-    tex = bpy.data.textures.new(name, tex_type)
+    tex = bpy.data.textures.new(name, "IMAGE")
     tex.image = img
     return tex
 #end create_texture
@@ -611,8 +613,7 @@ def create_materials() :
     hull_normal_colortex = create_texture \
       (
         name = "ColorTex",
-        tex_type = "IMAGE",
-        filename = resource_path("textures", "hull_normal.png")
+        filename = "hull_normal.png"
       )
     hull_normal_colortex.use_normal_map = True
 
@@ -629,8 +630,7 @@ def create_materials() :
     mtex.texture = create_texture \
       (
         name = "ColorTex",
-        tex_type = "IMAGE",
-        filename = resource_path("textures", "hull_lights_diffuse.png")
+        filename = "hull_lights_diffuse.png"
       )
     mtex.texture_coords = "GLOBAL"
     mtex.mapping = "CUBE"
@@ -644,8 +644,7 @@ def create_materials() :
     mtex.texture = create_texture \
       (
         name = "ColorTex",
-        tex_type = "IMAGE",
-        filename = resource_path("textures", "hull_lights_emit.png"),
+        filename = "hull_lights_emit.png",
         use_alpha = False
       )
     mtex.texture_coords = "GLOBAL"
