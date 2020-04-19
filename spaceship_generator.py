@@ -553,24 +553,11 @@ class Material(IntEnum) :
 
 # Creates an image texture given a texture name and filename relative to my
 # “textures” subdirectory.
-# Uses an image cache dictionary to prevent loading the same asset from disk twice.
-# Returns the texture.
-img_cache = {}
 def create_texture(name, filename, use_alpha = True) :
     filename = resource_path("textures", filename)
-    if (filename, use_alpha) in img_cache :
-        # Image has been cached already, so just use that.
-        img = img_cache[(filename, use_alpha)]
-    else :
-        # We haven't cached this asset yet, so load it from disk.
-        img = bpy.data.images.load(filename)
-        img.use_alpha = use_alpha
-        img.pack()
-        # Cache the asset
-        img_cache[(filename, use_alpha)] = img
-    #end if
-
-    # Create and return a new texture using img
+    img = bpy.data.images.load(filename)
+    img.use_alpha = use_alpha
+    img.pack()
     tex = bpy.data.textures.new(name, "IMAGE")
     tex.image = img
     return tex
