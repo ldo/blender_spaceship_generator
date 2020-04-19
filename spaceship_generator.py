@@ -2,7 +2,7 @@
 # spaceship_generator.py
 #
 # This is a Blender script that uses procedural generation to create
-# textured 3D spaceship models. Tested with Blender 2.77a.
+# textured 3D spaceship models. Tested with Blender 2.79.
 #
 # michael@spaceduststudios.com
 # https://github.com/a1studmuffin/SpaceshipGenerator
@@ -503,23 +503,28 @@ def create_materials():
 
     return ret
 
+class parms_defaults :
+    "define parameter defaults in a single place for reuse."
+    random_seed = ""
+    num_hull_segments_min = 3
+    num_hull_segments_max = 6
+    create_asymmetry_segments = True
+    num_asymmetry_segments_min = 1
+    num_asymmetry_segments_max = 5
+    create_face_detail = True
+    allow_horizontal_symmetry = True
+    allow_vertical_symmetry = False
+    apply_bevel_modifier = True
+    assign_materials = True
+#end parms_defaults
+
 # Generates a textured spaceship mesh and returns the object.
 # Just uses global cube texture coordinates rather than generating UVs.
 # Takes an optional random seed value to generate a specific spaceship.
 # Allows overriding of some parameters that affect generation.
-def generate_spaceship(random_seed='',
-                       num_hull_segments_min=3,
-                       num_hull_segments_max=6,
-                       create_asymmetry_segments=True,
-                       num_asymmetry_segments_min=1,
-                       num_asymmetry_segments_max=5,
-                       create_face_detail=True,
-                       allow_horizontal_symmetry=True,
-                       allow_vertical_symmetry=False,
-                       apply_bevel_modifier=True,
-                       assign_materials=True):
-    if random_seed:
-        seed(random_seed)
+def generate_spaceship(parms) :
+    if parms.random_seed:
+        seed(parms.random_seed)
 
     # Let's start with a unit BMesh cube scaled randomly
     bm = bmesh.new()
@@ -532,10 +537,10 @@ def generate_spaceship(random_seed='',
     for face in bm.faces[:]:
         if abs(face.normal.x) > 0.5:
             hull_segment_length = uniform(0.3, 1)
-            if num_hull_segments_max >= num_hull_segments_min :
-                num_hull_segments = randrange(num_hull_segments_min, num_hull_segments_max + 1)
+            if parms.num_hull_segments_max >= parms.num_hull_segments_min :
+                num_hull_segments = randrange(parms.num_hull_segments_min, parms.num_hull_segments_max + 1)
             else :
-                num_hull_segments = num_hull_segments_min # or something
+                num_hull_segments = parms.num_hull_segments_min # or something
             #end if
             hull_segment_range = range(num_hull_segments)
             for i in hull_segment_range:
@@ -583,14 +588,14 @@ def generate_spaceship(random_seed='',
                         bm, face, hull_segment_length, randint(2, 4), rib_scale)
 
     # Add some large asynmmetrical sections of the hull that stick out
-    if create_asymmetry_segments:
+    if parms.create_asymmetry_segments:
         for face in bm.faces[:]:
             # Skip any long thin faces as it'll probably look stupid
             if get_aspect_ratio(face) > 4:
                 continue
-            if num_asymmetry_segments_max >= num_asymmetry_segments_min and random() > 0.85:
+            if parms.num_asymmetry_segments_max >= parms.num_asymmetry_segments_min and random() > 0.85:
                 hull_piece_length = uniform(0.1, 0.4)
-                for i in range(randrange(num_asymmetry_segments_min, num_asymmetry_segments_max + 1)):
+                for i in range(randrange(parms.num_asymmetry_segments_min, parms.num_asymmetry_segments_max + 1)):
                     face = extrude_face(bm, face, hull_piece_length)
 
                     # Maybe apply some scaling
@@ -599,7 +604,7 @@ def generate_spaceship(random_seed='',
                         scale_face(bm, face, s, s, s)
 
     # Now the basic hull shape is built, let's categorize + add detail to all the faces
-    if create_face_detail:
+    if parms.create_face_detail:
         engine_faces = []
         grid_faces = []
         antenna_faces = []
@@ -678,11 +683,11 @@ def generate_spaceship(random_seed='',
             add_cylinders_to_face(bm, face)
 
     # Apply horizontal symmetry sometimes
-    if allow_horizontal_symmetry and random() > 0.5:
+    if parms.allow_horizontal_symmetry and random() > 0.5:
         bmesh.ops.symmetrize(bm, input=bm.verts[:] + bm.edges[:] + bm.faces[:], direction=1)
 
     # Apply vertical symmetry sometimes - this can cause spaceship "islands", so disabled by default
-    if allow_vertical_symmetry and random() > 0.5:
+    if parms.allow_vertical_symmetry and random() > 0.5:
         bmesh.ops.symmetrize(bm, input=bm.verts[:] + bm.edges[:] + bm.faces[:], direction=2)
 
     # Finish up, write the bmesh into a new mesh
@@ -705,7 +710,7 @@ def generate_spaceship(random_seed='',
     ob.location = (0, 0, 0)
 
     # Add a fairly broad bevel modifier to angularize shape
-    if apply_bevel_modifier:
+    if parms.apply_bevel_modifier:
         bevel_modifier = ob.modifiers.new('Bevel', 'BEVEL')
         bevel_modifier.width = uniform(5, 20)
         bevel_modifier.offset_type = 'PERCENT'
@@ -717,7 +722,7 @@ def generate_spaceship(random_seed='',
     me = ob.data
     materials = create_materials()
     for mat in materials:
-        if assign_materials:
+        if parms.assign_materials:
             me.materials.append(mat)
         else:
             me.materials.append(bpy.data.materials.new(name="Material"))
@@ -733,8 +738,8 @@ if __name__ == "__main__":
     if generate_single_spaceship:
         # Reset the scene, generate a single spaceship and focus on it
         reset_scene()
-        customseed = '' # add anything here to generate the same spaceship
-        obj = generate_spaceship(customseed)
+        parms_defaults.random_seed = '' # add anything here to generate the same spaceship
+        obj = generate_spaceship(parms_defaults)
 
         # View the selected object in all views
         for area in bpy.context.screen.areas:
@@ -782,7 +787,7 @@ if __name__ == "__main__":
 
                 # Generate a new spaceship
                 reset_scene()
-                obj = generate_spaceship()
+                obj = generate_spaceship(parms_defaults)
 
                 # look for a mirror plane in the scene, and position it just underneath the ship if found
                 lowest_z = centre = min((Vector(b).z for b in obj.bound_box))

@@ -27,31 +27,74 @@ class GenerateSpaceship(Operator):
     bl_label = "Spaceship"
     bl_options = {'REGISTER', 'UNDO'}
 
-    random_seed = StringProperty(default='', name='Seed')
-    num_hull_segments_min      = IntProperty (default=3, min=0, soft_max=16, name='Min. Hull Segments')
-    num_hull_segments_max      = IntProperty (default=6, min=0, soft_max=16, name='Max. Hull Segments')
-    create_asymmetry_segments  = BoolProperty(default=True, name='Create Asymmetry Segments')
-    num_asymmetry_segments_min = IntProperty (default=1, min=1, soft_max=16, name='Min. Asymmetry Segments')
-    num_asymmetry_segments_max = IntProperty (default=5, min=1, soft_max=16, name='Max. Asymmetry Segments')
-    create_face_detail         = BoolProperty(default=True,  name='Create Face Detail')
-    allow_horizontal_symmetry  = BoolProperty(default=True,  name='Allow Horizontal Symmetry')
-    allow_vertical_symmetry    = BoolProperty(default=False, name='Allow Vertical Symmetry')
-    apply_bevel_modifier       = BoolProperty(default=True,  name='Apply Bevel Modifier')
-    assign_materials           = BoolProperty(default=True,  name='Assign Materials')
+    df = spaceship_generator.parms_defaults # temp short name
+    random_seed = StringProperty \
+      (
+        default = df.random_seed,
+        name = 'Seed'
+      )
+    num_hull_segments_min = IntProperty \
+      (
+        default = df.num_hull_segments_min,
+        min = 0,
+        soft_max = 16,
+        name = 'Min. Hull Segments'
+      )
+    num_hull_segments_max = IntProperty \
+      (
+        default = df.num_hull_segments_max,
+        min = 0,
+        soft_max = 16,
+        name = 'Max. Hull Segments'
+      )
+    create_asymmetry_segments = BoolProperty \
+      (
+        default = df.create_asymmetry_segments,
+        name = 'Create Asymmetry Segments'
+      )
+    num_asymmetry_segments_min = IntProperty \
+      (
+        default = df.num_asymmetry_segments_min,
+        min = 1,
+        soft_max = 16,
+        name = 'Min. Asymmetry Segments'
+      )
+    num_asymmetry_segments_max = IntProperty \
+      (
+        default = df.num_asymmetry_segments_max,
+        min = 1,
+        soft_max = 16,
+        name = 'Max. Asymmetry Segments'
+      )
+    create_face_detail = BoolProperty \
+      (
+        default = df.create_face_detail,
+        name = 'Create Face Detail'
+      )
+    allow_horizontal_symmetry = BoolProperty \
+      (
+        default = df.allow_horizontal_symmetry,
+        name = 'Allow Horizontal Symmetry'
+      )
+    allow_vertical_symmetry = BoolProperty \
+      (
+        default = df.allow_vertical_symmetry,
+        name='Allow Vertical Symmetry'
+      )
+    apply_bevel_modifier = BoolProperty \
+      (
+        default = df.apply_bevel_modifier,
+        name = 'Apply Bevel Modifier'
+      )
+    assign_materials = BoolProperty \
+      (
+        default = df.assign_materials,
+        name = 'Assign Materials'
+      )
+    del df
 
     def execute(self, context):
-        spaceship_generator.generate_spaceship(
-            self.random_seed,
-            self.num_hull_segments_min,
-            self.num_hull_segments_max,
-            self.create_asymmetry_segments,
-            self.num_asymmetry_segments_min,
-            self.num_asymmetry_segments_max,
-            self.create_face_detail,
-            self.allow_horizontal_symmetry,
-            self.allow_vertical_symmetry,
-            self.apply_bevel_modifier,
-            self.assign_materials)
+        spaceship_generator.generate_spaceship(self)
         return {'FINISHED'}
 
 def menu_func(self, context):
