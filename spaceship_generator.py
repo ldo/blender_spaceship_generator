@@ -8,13 +8,11 @@
 # https://github.com/a1studmuffin/SpaceshipGenerator
 #
 
-import sys
 import os
-import os.path
 import bpy
 import bmesh
 import datetime
-from math import sqrt, radians, pi, cos, sin
+from math import sqrt, radians, cos, sin
 from mathutils import Vector, Matrix
 from random import random, seed, uniform, randint, randrange
 from enum import IntEnum
