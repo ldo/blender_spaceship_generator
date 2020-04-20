@@ -11,7 +11,6 @@
 import os
 import bpy
 import bmesh
-import datetime
 import math
 from mathutils import \
     Matrix, \
@@ -940,6 +939,8 @@ def generate_spaceship(parms) :
 
 if __name__ == "__main__" :
 
+    import datetime
+
     # Deletes all existing spaceships and unused materials from the scene
     def reset_scene() :
         for item in bpy.data.objects :
@@ -977,6 +978,7 @@ if __name__ == "__main__" :
                 bpy.ops.view3d.view_selected(ctx)
             #end if
         #end for
+
     else :
         # Export a movie showcasing many different kinds of ships
 
@@ -1066,6 +1068,7 @@ if __name__ == "__main__" :
             bpy.ops.render.render(write_still = True)
             frame += 1
         #end while movie_duration < total_movie_duration
+
     #end if generate_single_spaceship
 
 #end if __name__ == "__main__"
