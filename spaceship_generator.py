@@ -17,11 +17,7 @@ from mathutils import \
     Matrix, \
     Vector
 from random import \
-    random, \
-    seed, \
-    uniform, \
-    randint, \
-    randrange
+    Random
 from enum import \
     IntEnum
 from colorsys import \
@@ -169,7 +165,7 @@ def add_exhaust_to_face(bm, face) :
     #end if
 
     # The more square the face is, the more grid divisions it might have
-    num_cuts = randint(1, int(4 - get_aspect_ratio(face)))
+    num_cuts = random.randint(1, int(4 - get_aspect_ratio(face)))
     result = bmesh.ops.subdivide_edges \
       (
         bm,
@@ -178,9 +174,9 @@ def add_exhaust_to_face(bm, face) :
         fractal = 0.02,
         use_grid_fill = True
       )
-    exhaust_length = uniform(0.1, 0.2)
-    scale_outer = 1 / uniform(1.3, 1.6)
-    scale_inner = 1 / uniform(1.05, 1.1)
+    exhaust_length = random.uniform(0.1, 0.2)
+    scale_outer = 1 / random.uniform(1.3, 1.6)
+    scale_inner = 1 / random.uniform(1.05, 1.1)
     for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
             if is_rear_face(face) :
@@ -207,16 +203,16 @@ def add_grid_to_face(bm, face) :
       (
         bm,
         edges = face.edges[:],
-        cuts = randint(2, 4),
+        cuts = random.randint(2, 4),
         fractal = 0.02,
         use_grid_fill = True,
         use_single_edge = False
       )
-    grid_length = uniform(0.025, 0.15)
+    grid_length = random.uniform(0.025, 0.15)
     scale = 0.8
     for face in result["geom"] :
         if isinstance(face, bmesh.types.BMFace) :
-            material_index = MATERIAL.HULL_LIGHTS if random() > 0.5 else MATERIAL.HULL
+            material_index = MATERIAL.HULL_LIGHTS if random.random() > 0.5 else MATERIAL.HULL
             extruded_face_list = []
             face = extrude_face(bm, face, grid_length, extruded_face_list)
             for extruded_face in extruded_face_list :
@@ -234,9 +230,9 @@ def add_cylinders_to_face(bm, face) :
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
-    horizontal_step = randint(1, 3)
-    vertical_step = randint(1, 3)
-    num_segments = randint(6, 12)
+    horizontal_step = random.randint(1, 3)
+    vertical_step = random.randint(1, 3)
+    num_segments = random.randint(6, 12)
     face_width, face_height = get_face_width_and_height(face)
     cylinder_depth = \
       (
@@ -289,8 +285,8 @@ def add_weapons_to_face(bm, face) :
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
-    horizontal_step = randint(1, 2)
-    vertical_step = randint(1, 2)
+    horizontal_step = random.randint(1, 2)
+    vertical_step = random.randint(1, 2)
     num_segments = 16
     face_width, face_height = get_face_width_and_height(face)
     weapon_size = \
@@ -321,7 +317,7 @@ def add_weapons_to_face(bm, face) :
               (
                     get_face_matrix(face, pos + face.normal * weapon_depth * 0.5)
                 *
-                    Matrix.Rotation(uniform(0, 90) * deg, 3, "Z").to_4x4()
+                    Matrix.Rotation(random.uniform(0, 90) * deg, 3, "Z").to_4x4()
               )
 
             # Turret foundation
@@ -371,7 +367,7 @@ def add_weapons_to_face(bm, face) :
                         Matrix.Translation(Vector((0, 0, weapon_size * -0.6))).to_4x4()
               )
             # Turret housing
-            upward_angle = uniform(0, 45) * deg
+            upward_angle = random.uniform(0, 45) * deg
             turret_house_mat = \
               (
                     face_matrix
@@ -430,11 +426,11 @@ def add_sphere_to_face(bm, face) :
         return
     #end if
     face_width, face_height = get_face_width_and_height(face)
-    sphere_size = uniform(0.4, 1.0) * min(face_width, face_height)
+    sphere_size = random.uniform(0.4, 1.0) * min(face_width, face_height)
     sphere_matrix = get_face_matrix \
       (
         face,
-        face.calc_center_bounds() - face.normal * uniform(0, sphere_size * 0.5)
+        face.calc_center_bounds() - face.normal * random.uniform(0, sphere_size * 0.5)
       )
     result = bmesh.ops.create_icosphere \
       (
@@ -455,8 +451,8 @@ def add_surface_antenna_to_face(bm, face) :
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
-    horizontal_step = randint(4, 10)
-    vertical_step = randint(4, 10)
+    horizontal_step = random.randint(4, 10)
+    vertical_step = random.randint(4, 10)
     for h in range(horizontal_step) :
         top = face.verts[0].co.lerp \
           (
@@ -469,16 +465,16 @@ def add_surface_antenna_to_face(bm, face) :
             (h + 1) / (horizontal_step + 1)
           )
         for v in range(vertical_step) :
-            if random() > 0.9 :
+            if random.random() > 0.9 :
                 pos = top.lerp(bottom, (v + 1) / (vertical_step + 1))
                 face_size = math.sqrt(face.calc_area())
-                depth = uniform(0.1, 1.5) * face_size
-                depth_short = depth * uniform(0.02, 0.15)
-                base_diameter = uniform(0.005, 0.05)
-                material_index = MATERIAL.HULL if random() > 0.5 else MATERIAL.HULL_DARK
+                depth = random.uniform(0.1, 1.5) * face_size
+                depth_short = depth * random.uniform(0.02, 0.15)
+                base_diameter = random.uniform(0.005, 0.05)
+                material_index = MATERIAL.HULL if random.random() > 0.5 else MATERIAL.HULL_DARK
 
                 # Spire
-                num_segments = uniform(3, 6)
+                num_segments = random.uniform(3, 6)
                 result = bmesh.ops.create_cone \
                   (
                     bm,
@@ -503,8 +499,8 @@ def add_surface_antenna_to_face(bm, face) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = num_segments,
-                    diameter1 = base_diameter * uniform(1, 1.5),
-                    diameter2 = base_diameter * uniform(1.5, 2),
+                    diameter1 = base_diameter * random.uniform(1, 1.5),
+                    diameter2 = base_diameter * random.uniform(1.5, 2),
                     depth = depth_short,
                     matrix = get_face_matrix(face, pos + face.normal * depth_short * 0.45)
                   )
@@ -513,7 +509,7 @@ def add_surface_antenna_to_face(bm, face) :
                         vert_face.material_index = material_index
                     #end for
                 #end for
-            #end if random() > 0.9
+            #end if random.random() > 0.9
         #end for v in range(vertical_step)
     #end for h in range(horizontal_step)
 #end add_surface_antenna_to_face
@@ -604,9 +600,9 @@ def create_materials() :
     # Choose a base color for the spaceship hull
     hull_base_color = hls_to_rgb \
       (
-        h = random(),
-        l = uniform(0.05, 0.5),
-        s = uniform(0, 0.25)
+        h = random.random(),
+        l = random.uniform(0.05, 0.5),
+        s = random.uniform(0, 0.25)
       )
     # Load up the hull normal map
     hull_normal_colortex = create_texture("hull_normal.png", True)
@@ -628,7 +624,12 @@ def create_materials() :
     mtex.blend_type = "ADD"
     mtex.use_map_color_diffuse = True
     mtex.use_rgb_to_intensity = True
-    mtex.color = hls_to_rgb(h = random(), l = uniform(0.5, 1), s = uniform(0, 0.5))
+    mtex.color = hls_to_rgb \
+      (
+        h = random.random(),
+        l = random.uniform(0.5, 1),
+        s = random.uniform(0, 0.5)
+      )
 
     # Add an emissive layer that lights up the windows
     mtex = mat.texture_slots.add()
@@ -645,7 +646,7 @@ def create_materials() :
     set_hull_mat_basics(mat, [0.3 * x for x in hull_base_color], hull_normal_colortex)
 
     # Choose a glow color for the exhaust + glow discs
-    glow_color = hls_to_rgb(h = random(), l = uniform(0.5, 1), s = 1)
+    glow_color = hls_to_rgb(h = random.random(), l = random.uniform(0.5, 1), s = 1)
 
     # Build the exhaust_burn texture
     mat = ret[MATERIAL.EXHAUST_BURN]
@@ -680,8 +681,10 @@ class parms_defaults :
 # Takes an optional random seed value to generate a specific spaceship.
 # Allows overriding of some parameters that affect generation.
 def generate_spaceship(parms) :
+    global random # for use by other routines in this module
+    random = Random()
     if parms.random_seed :
-        seed(parms.random_seed)
+        random.seed(parms.random_seed)
     #end if
 
     # Let's start with a unit BMesh cube scaled randomly
@@ -689,16 +692,16 @@ def generate_spaceship(parms) :
     bmesh.ops.create_cube(bm, size = 1)
     scale_vector = Vector \
       (
-        (uniform(0.75, 2.0), uniform(0.75, 2.0), uniform(0.75, 2.0))
+        (random.uniform(0.75, 2.0), random.uniform(0.75, 2.0), random.uniform(0.75, 2.0))
       )
     bmesh.ops.scale(bm, vec = scale_vector, verts = bm.verts)
 
     # Extrude out the hull along the X axis, adding some semi-random perturbations
     for face in bm.faces[:] :
         if abs(face.normal.x) > 0.5 :
-            hull_segment_length = uniform(0.3, 1)
+            hull_segment_length = random.uniform(0.3, 1)
             if parms.num_hull_segments_max >= parms.num_hull_segments_min :
-                num_hull_segments = randrange \
+                num_hull_segments = random.randrange \
                   (
                     parms.num_hull_segments_min,
                     parms.num_hull_segments_max + 1
@@ -709,11 +712,11 @@ def generate_spaceship(parms) :
             hull_segment_range = range(num_hull_segments)
             for i in hull_segment_range :
                 is_last_hull_segment = i == hull_segment_range[-1]
-                val = random()
+                val = random.random()
                 if val > 0.1 :
                     # Most of the time, extrude out the face with some random deviations
                     face = extrude_face(bm, face, hull_segment_length)
-                    if random() > 0.75 :
+                    if random.random() > 0.75 :
                         face = extrude_face \
                           (
                             bm,
@@ -723,22 +726,22 @@ def generate_spaceship(parms) :
                     #end if
 
                     # Maybe apply some scaling
-                    if random() > 0.5 :
-                        sy = uniform(1.2, 1.5)
-                        sz = uniform(1.2, 1.5)
-                        if is_last_hull_segment or random() > 0.5 :
+                    if random.random() > 0.5 :
+                        sy = random.uniform(1.2, 1.5)
+                        sz = random.uniform(1.2, 1.5)
+                        if is_last_hull_segment or random.random() > 0.5 :
                             sy = 1 / sy
                             sz = 1 / sz
                         scale_face(bm, face, 1, sy, sz)
                     #end if
 
                     # Maybe apply some sideways translation
-                    if random() > 0.5 :
+                    if random.random() > 0.5 :
                         sideways_translation = Vector \
                           (
-                            (0, 0, uniform(0.1, 0.4) * scale_vector.z * hull_segment_length)
+                            (0, 0, random.uniform(0.1, 0.4) * scale_vector.z * hull_segment_length)
                           )
-                        if random() > 0.5 :
+                        if random.random() > 0.5 :
                             sideways_translation = -sideways_translation
                         #end if
                         bmesh.ops.translate \
@@ -750,9 +753,9 @@ def generate_spaceship(parms) :
                     #end if
 
                     # Maybe add some rotation around Y axis
-                    if random() > 0.5 :
+                    if random.random() > 0.5 :
                         angle = 5 * deg
-                        if random() > 0.5 :
+                        if random.random() > 0.5 :
                             angle = -angle
                         #end if
                         bmesh.ops.rotate \
@@ -765,13 +768,13 @@ def generate_spaceship(parms) :
                     #end if
                 else : #  val <= 0.1
                     # Rarely, create a ribbed section of the hull
-                    rib_scale = uniform(0.75, 0.95)
+                    rib_scale = random.uniform(0.75, 0.95)
                     face = ribbed_extrude_face \
                       (
                         bm,
                         face,
                         translate_forwards = hull_segment_length,
-                        num_ribs = randint(2, 4),
+                        num_ribs = random.randint(2, 4),
                         rib_scale = rib_scale
                       )
                 #end if val > 0.1
@@ -790,11 +793,11 @@ def generate_spaceship(parms) :
                     get_aspect_ratio(face) <= 4
                       # Skip any long thin faces as it'll probably look stupid
                 and
-                    random() > 0.85
+                    random.random() > 0.85
             ) :
-                hull_piece_length = uniform(0.1, 0.4)
+                hull_piece_length = random.uniform(0.1, 0.4)
                 for i in \
-                    range(randrange
+                    range(random.randrange
                       (
                         parms.num_asymmetry_segments_min,
                         parms.num_asymmetry_segments_max + 1
@@ -802,8 +805,8 @@ def generate_spaceship(parms) :
                 :
                     face = extrude_face(bm, face, hull_piece_length)
                     # Maybe apply some scaling
-                    if random() > 0.25 :
-                        s = 1 / uniform(1.1, 1.5)
+                    if random.random() > 0.25 :
+                        s = 1 / random.uniform(1.1, 1.5)
                         scale_face(bm, face, s, s, s)
                     #end if
                 #end for
@@ -827,7 +830,7 @@ def generate_spaceship(parms) :
             #end if
 
             # Spin the wheel! Let's categorize + assign some materials
-            val = random()
+            val = random.random()
             if is_rear_face(face) :
                 if not engine_faces or val > 0.75 :
                     engine_faces.append(face)
@@ -903,11 +906,11 @@ def generate_spaceship(parms) :
     #end if parms.create_face_detail
 
     # Apply horizontal symmetry sometimes
-    if parms.allow_horizontal_symmetry and random() > 0.5 :
+    if parms.allow_horizontal_symmetry and random.random() > 0.5 :
         bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = 1)
     #end if
     # Apply vertical symmetry sometimes - this can cause spaceship "islands", so disabled by default
-    if parms.allow_vertical_symmetry and random() > 0.5 :
+    if parms.allow_vertical_symmetry and random.random() > 0.5 :
         bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = 2)
     #end if
 
@@ -932,7 +935,7 @@ def generate_spaceship(parms) :
     # Add a fairly broad bevel modifier to angularize shape
     if parms.add_bevel_modifier :
         bevel_modifier = ob.modifiers.new("Bevel", "BEVEL")
-        bevel_modifier.width = uniform(5, 20)
+        bevel_modifier.width = random.uniform(5, 20)
         bevel_modifier.offset_type = "PERCENT"
         bevel_modifier.segments = 2
         bevel_modifier.profile = 0.25
