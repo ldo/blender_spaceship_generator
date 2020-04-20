@@ -727,13 +727,13 @@ def create_materials() :
     # Build the hull texture
     set_hull_mat_basics(materials[MATERIAL.HULL], hull_base_color)
 
-    # Build the hull_lights texture
-    ctx, main_shader = set_hull_mat_basics(materials[MATERIAL.HULL_LIGHTS], hull_base_color)
-      # actually hull_base_color has no effect here, overridden by a node connection below
-    # Add a diffuse layer that sets the window color
-    ctx.step_down(300)
-    ctx.step_across(-800)
+    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-400, 0))
+    for node in ctx.graph.nodes :
+      # clear out default nodes
+        ctx.graph.nodes.remove(node)
+    #end for
     save_pos = ctx.pos
+    # Add a diffuse layer that sets the window color
     base_window = create_texture \
       (
         ctx,
@@ -741,10 +741,11 @@ def create_materials() :
         use_alpha = True,
         is_color = True
       )
-    mixer1 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
-    mixer1.blend_type = "ADD"
-    mixer1.inputs[0].default_value = 1.0
-    mixer1.inputs[1].default_value = \
+    mixer = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer.blend_type = "ADD"
+    mixer.inputs[0].default_value = 1.0
+    ctx.link(base_window, mixer.inputs[1])
+    mixer.inputs[2].default_value = \
       (
             hls_to_rgb
               (
@@ -755,6 +756,12 @@ def create_materials() :
         +
             (1,)
       )
+    color_shader = ctx.new_node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
+    ctx.link(mixer.outputs[0], color_shader.inputs["Color"])
+    add_shader = ctx.new_node("ShaderNodeAddShader", ctx.step_across(200))
+    ctx.link(color_shader.outputs[0], add_shader.inputs[0])
+    material_output = ctx.new_node("ShaderNodeOutputMaterial", ctx.step_across(200))
+    ctx.link(add_shader.outputs[0], material_output.inputs[0])
     ctx.pos = save_pos
     ctx.step_down(300)
     # Add an emissive layer that lights up the windows
@@ -765,20 +772,10 @@ def create_materials() :
         use_alpha = False,
         is_color = True
       )
-    amplifier = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
-    amplifier.blend_type = "MULTIPLY"
-    amplifier.inputs[0].default_value = 1.0
-    ctx.link(window_light, amplifier.inputs[1])
-    amplifier.inputs[2].default_value = 3 * (2.0,) + (1,)
-    ctx.step_down(-200)
-    mixer2 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
-    mixer2.blend_type = "ADD"
-    mixer2.inputs[0].default_value = 1.0
-    ctx.link(base_window, mixer1.inputs[1])
-    mixer1.inputs[2].default_value = hull_base_color
-    ctx.link(mixer1.outputs[0], mixer2.inputs[1])
-    ctx.link(amplifier.outputs[0], mixer2.inputs[2])
-    ctx.link(mixer2.outputs[0], main_shader.inputs["Base Color"])
+    light_shader = ctx.new_node("ShaderNodeEmission", ctx.step_across(200))
+    ctx.link(window_light, light_shader.inputs["Color"])
+    light_shader.inputs["Strength"].default_value = 2.0
+    ctx.link(light_shader.outputs[0], add_shader.inputs[1])
     deselect_all(ctx.graph)
 
     # Build the hull_dark texture
