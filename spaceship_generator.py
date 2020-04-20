@@ -30,10 +30,10 @@ def resource_path(*path_components) :
     return os.path.join(DIR, *path_components)
 #end resource_path
 
-# Extrudes a face along its normal by translate_forwards units.
-# Returns the new face, and optionally fills out extruded_face_list
-# with all the additional side faces created from the extrusion.
 def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) :
+    # Extrudes a face along its normal by translate_forwards units.
+    # Returns the new face, and optionally fills out extruded_face_list
+    # with all the additional side faces created from the extrusion.
     new_faces = bmesh.ops.extrude_discrete_faces(bm, faces = [face])["faces"]
     if extruded_face_list != None :
         extruded_face_list += new_faces[:]
@@ -48,9 +48,9 @@ def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) 
     return new_face
 #end extrude_face
 
-# Similar to extrude_face, except corrigates the geometry to create "ribs".
-# Returns the new face.
 def ribbed_extrude_face(bm, face, translate_forwards, num_ribs = 3, rib_scale = 0.9) :
+    # Similar to extrude_face, except corrigates the geometry to create "ribs".
+    # Returns the new face.
     translate_forwards_per_rib = translate_forwards / num_ribs
     new_face = face
     for i in range(num_ribs) :
@@ -65,8 +65,8 @@ def ribbed_extrude_face(bm, face, translate_forwards, num_ribs = 3, rib_scale = 
     return new_face
 #end ribbed_extrude_face
 
-# Scales a face in local face space. Ace!
 def scale_face(bm, face, scale_x, scale_y, scale_z) :
+    # Scales a face in local face space. Ace!
     face_space = get_face_matrix(face)
     face_space.invert()
     bmesh.ops.scale \
@@ -78,9 +78,9 @@ def scale_face(bm, face, scale_x, scale_y, scale_z) :
       )
 #end scale_face
 
-# Returns a rough 4x4 transform matrix for a face (doesn't handle
-# distortion/shear) with optional position override.
 def get_face_matrix(face, pos = None) :
+    # Returns a rough 4x4 transform matrix for a face (doesn't handle
+    # distortion/shear) with optional position override.
     x_axis = (face.verts[1].co - face.verts[0].co).normalized()
     z_axis = -face.normal
     y_axis = z_axis.cross(x_axis)
@@ -110,9 +110,9 @@ def get_face_matrix(face, pos = None) :
     return mat
 #end get_face_matrix
 
-# Returns the rough length and width of a quad face.
-# Assumes a perfect rectangle, but close enough.
 def get_face_width_and_height(face) :
+    # Returns the rough length and width of a quad face.
+    # Assumes a perfect rectangle, but close enough.
     if not face.is_valid or len(face.verts[:]) < 4 :
         return -1, -1
     #end if
@@ -121,8 +121,8 @@ def get_face_width_and_height(face) :
     return width, height
 #end get_face_width_and_height
 
-# Returns the rough aspect ratio of a face. Always >= 1.
 def get_aspect_ratio(face) :
+    # Returns the rough aspect ratio of a face. Always >= 1.
     if not face.is_valid :
         return 1.0
     #end if
@@ -133,14 +133,23 @@ def get_aspect_ratio(face) :
     return face_aspect_ratio
 #end get_aspect_ratio
 
-# Returns true if this face is pointing behind the ship
 def is_rear_face(face) :
+    # is this face is pointing behind the ship
     return face.normal.x < -0.95
 #end is_rear_face
 
-# Given a face, splits it into a uniform grid and extrudes each grid face
-# out and back in again, making an exhaust shape.
+class MATERIAL(IntEnum) :
+    "names for material slot indices."
+    HULL = 0            # Plain spaceship hull
+    HULL_LIGHTS = 1     # Spaceship hull with emissive windows
+    HULL_DARK = 2       # Plain Spaceship hull, darkened
+    EXHAUST_BURN = 3    # Emissive engine burn material
+    GLOW_DISC = 4       # Emissive landing pad disc material
+#end MATERIAL
+
 def add_exhaust_to_face(bm, face) :
+    # Given a face, splits it into a uniform grid and extrudes each grid face
+    # out and back in again, making an exhaust shape.
     if not face.is_valid :
         return
     #end if
@@ -175,8 +184,8 @@ def add_exhaust_to_face(bm, face) :
     #end for
 #end add_exhaust_to_face
 
-# Given a face, splits it up into a smaller uniform grid and extrudes each grid cell.
 def add_grid_to_face(bm, face) :
+    # Given a face, splits it up into a smaller uniform grid and extrudes each grid cell.
     if not face.is_valid :
         return
     #end if
@@ -206,8 +215,8 @@ def add_grid_to_face(bm, face) :
     #end for
 #end add_grid_to_face
 
-# Given a face, adds some cylinders along it in a grid pattern.
 def add_cylinders_to_face(bm, face) :
+    # Given a face, adds some cylinders along it in a grid pattern.
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
@@ -260,9 +269,9 @@ def add_cylinders_to_face(bm, face) :
     #end for
 #end add_cylinders_to_face
 
-# Given a face, adds some weapon turrets to it in a grid pattern.
-# Each turret will have a random orientation.
 def add_weapons_to_face(bm, face) :
+    # Given a face, adds some weapon turrets to it in a grid pattern.
+    # Each turret will have a random orientation.
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
@@ -401,8 +410,8 @@ def add_weapons_to_face(bm, face) :
     #end for h in range(horizontal_step)
 #end add_weapons_to_face
 
-# Given a face, adds a sphere on the surface, partially inset.
 def add_sphere_to_face(bm, face) :
+    # Given a face, adds a sphere on the surface, partially inset.
     if not face.is_valid :
         return
     #end if
@@ -427,8 +436,8 @@ def add_sphere_to_face(bm, face) :
     #end for
 #end add_sphere_to_face
 
-# Given a face, adds some pointy intimidating antennas.
 def add_surface_antenna_to_face(bm, face) :
+    # Given a face, adds some pointy intimidating antennas.
     if not face.is_valid or len(face.verts[:]) < 4 :
         return
     #end if
@@ -495,8 +504,8 @@ def add_surface_antenna_to_face(bm, face) :
     #end for h in range(horizontal_step)
 #end add_surface_antenna_to_face
 
-# Given a face, adds a glowing "landing pad" style disc.
 def add_disc_to_face(bm, face) :
+    # Given a face, adds a glowing "landing pad" style disc.
     if not face.is_valid :
         return
     #end if
@@ -531,17 +540,9 @@ def add_disc_to_face(bm, face) :
     #end for
 #end add_disc_to_face
 
-class MATERIAL(IntEnum) :
-    HULL = 0            # Plain spaceship hull
-    HULL_LIGHTS = 1     # Spaceship hull with emissive windows
-    HULL_DARK = 2       # Plain Spaceship hull, darkened
-    EXHAUST_BURN = 3    # Emissive engine burn material
-    GLOW_DISC = 4       # Emissive landing pad disc material
-#end MATERIAL
-
-# Creates an image texture given filename relative to my
-# “textures” subdirectory.
 def create_texture(filename, use_alpha) :
+    # Creates an image texture given filename relative to my
+    # “textures” subdirectory.
     name = os.path.splitext(filename)[0]
     filepath = resource_path("textures", filename)
     img = bpy.data.images.load(filepath)
@@ -552,8 +553,8 @@ def create_texture(filename, use_alpha) :
     return tex
 #end create_texture
 
-# Adds a hull normal map texture slot to a material.
 def add_hull_normal_map(mat, hull_normal_colortex) :
+    # Adds a hull normal map texture slot to a material.
     mtex = mat.texture_slots.add()
     mtex.texture = hull_normal_colortex
     mtex.texture_coords = "GLOBAL" # global UVs, yolo
@@ -564,15 +565,15 @@ def add_hull_normal_map(mat, hull_normal_colortex) :
     mtex.bump_method = "BUMP_BEST_QUALITY"
 #end add_hull_normal_map
 
-# Sets some basic properties for a hull material.
 def set_hull_mat_basics(mat, color, hull_normal_colortex) :
+    # Sets some basic properties for a hull material.
     mat.specular_intensity = 0.1
     mat.diffuse_color = color
     add_hull_normal_map(mat, hull_normal_colortex)
 #end set_hull_mat_basics
 
-# Creates all our materials and returns them as a list.
 def create_materials() :
+    # Creates all our materials and returns them as a list.
     ret = []
     for material in MATERIAL :
         ret.append(bpy.data.materials.new(material.name.lower()))
@@ -657,11 +658,11 @@ class parms_defaults :
     assign_materials = True
 #end parms_defaults
 
-# Generates a textured spaceship mesh and returns the object.
-# Just uses global cube texture coordinates rather than generating UVs.
-# Takes an optional random seed value to generate a specific spaceship.
-# Allows overriding of some parameters that affect generation.
 def generate_spaceship(parms) :
+    # Generates a textured spaceship mesh and returns the object.
+    # Just uses global cube texture coordinates rather than generating UVs.
+    # Takes an optional random seed value to generate a specific spaceship.
+    # Allows overriding of some parameters that affect generation.
     global random # for use by other routines in this module
     random = Random()
     if parms.random_seed :
