@@ -52,7 +52,7 @@ def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) 
 # Similar to extrude_face, except corrigates the geometry to create "ribs".
 # Returns the new face.
 def ribbed_extrude_face(bm, face, translate_forwards, num_ribs = 3, rib_scale = 0.9) :
-    translate_forwards_per_rib = translate_forwards / float(num_ribs)
+    translate_forwards_per_rib = translate_forwards / num_ribs
     new_face = face
     for i in range(num_ribs) :
         new_face = extrude_face(bm, new_face, translate_forwards_per_rib * 0.25)
@@ -291,7 +291,7 @@ def add_weapons_to_face(bm, face) :
         bottom = face.verts[3].co.lerp \
           (
             face.verts[2].co,
-            (h + 1) / float(horizontal_step + 1)
+            (h + 1) / (horizontal_step + 1)
           )
         for v in range(vertical_step) :
             pos = top.lerp(bottom, (v + 1) / (vertical_step + 1))
@@ -998,7 +998,7 @@ if __name__ == "__main__" :
         res_y = 1080
 
         # Batch render the movie frames
-        inv_fps = 1 / float(fps)
+        inv_fps = 1 / fps
         movie_duration = 0
         spaceship_duration = total_spaceship_duration
         scene = bpy.data.scenes["Scene"]
