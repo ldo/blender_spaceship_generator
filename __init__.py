@@ -1,7 +1,7 @@
 bl_info = \
     {
         "name" : "Spaceship Generator",
-        "author" : "Michael Davies",
+        "author" : "Michael Davies, Lawrence D'Oliveiro",
         "version" : (1, 2, 0),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
