@@ -30,6 +30,89 @@ def resource_path(*path_components) :
     return os.path.join(DIR, *path_components)
 #end resource_path
 
+def load_image(filename, use_alpha, is_color) :
+    name = os.path.splitext(filename)[0]
+    filepath = resource_path("textures", filename)
+    image = bpy.data.images.load(filepath)
+    image.alpha_mode = ("NONE", "STRAIGHT")[use_alpha]
+    image.colorspace_settings.name = ("Non-Color", "sRGB")[is_color]
+    image.pack()
+    # wipe all traces of original addon file path
+    image.filepath = "//textures/%s" % filename
+    image.filepath_raw = image.filepath
+    for item in image.packed_files :
+        item.filepath = image.filepath
+    #end for
+    return image
+#end load_image
+
+class NodeContext :
+    "convenience class for assembling a nicely-laid-out node graph."
+
+    def __init__(self, graph, location) :
+        self.graph = graph
+        self.location = [location[0], location[1]]
+        self.pos_save = []
+    #end __init__
+
+    def step_across(self, width) :
+        "returns the current position and advances it across by width."
+        result = self.location[:]
+        self.location[0] += width
+        return result
+    #end step_across
+
+    def step_down(self, height) :
+        "returns the current position and advances it down by height."
+        result = self.location[:]
+        self.location[1] -= height
+        return result
+     #end step_down
+
+    @property
+    def pos(self) :
+        return (self.location[0], self.location[1])
+    #end pos
+
+    @pos.setter
+    def pos(self, pos) :
+        self.location[:] = [pos[0], pos[1]]
+    #end pos
+
+    def push_pos(self) :
+        "saves the current location on the stack."
+        self.pos_save.append(list(self.location))
+    #end push_pos
+
+    def pop_pos(self) :
+        "restores the last-stacked location."
+        self.location[:] = self.pos_save.pop()
+    #end pop_pos
+
+    def new_node(self, type, pos) :
+        node = self.graph.nodes.new(type)
+        node.location = (pos[0], pos[1])
+        return node
+    #end new_node
+
+    def link(self, frôm, to) :
+        self.graph.links.new(frôm, to)
+    #end link
+
+#end NodeContext
+
+def deselect_all(material_tree) :
+    for node in material_tree.nodes :
+        node.select = False
+    #end for
+#end deselect_all
+
+def find_main_shader(mat) :
+    # returns the main (only) shader node that is created
+    # as part of a default material setup.
+    return mat.node_tree.nodes["Principled BSDF"]
+#end find_main_shader
+
 def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) :
     # Extrudes a face along its normal by translate_forwards units.
     # Returns the new face, and optionally fills out extruded_face_list
@@ -251,7 +334,7 @@ def add_cylinders_to_face(bm, face) :
             cylinder_matrix = \
               (
                     get_face_matrix(face, pos)
-                *
+                @
                     Matrix.Rotation(90 * deg, 3, "X").to_4x4()
               )
             bmesh.ops.create_cone \
@@ -306,7 +389,7 @@ def add_weapons_to_face(bm, face) :
             face_matrix = \
               (
                     get_face_matrix(face, pos + face.normal * weapon_depth * 0.5)
-                *
+                @
                     Matrix.Rotation(random.uniform(0, 90) * deg, 3, "Z").to_4x4()
               )
 
@@ -334,9 +417,9 @@ def add_weapons_to_face(bm, face) :
                 depth = weapon_depth * 2,
                 matrix =
                         face_matrix
-                    *
+                    @
                         Matrix.Rotation(90 * deg, 3, "Y").to_4x4()
-                    *
+                    @
                         Matrix.Translation(Vector((0, 0, weapon_size * 0.6))).to_4x4()
               )
             # Turret right guard
@@ -351,9 +434,9 @@ def add_weapons_to_face(bm, face) :
                 depth = weapon_depth * 2,
                 matrix =
                         face_matrix
-                    *
+                    @
                         Matrix.Rotation(90 * deg, 3, "Y").to_4x4()
-                    *
+                    @
                         Matrix.Translation(Vector((0, 0, weapon_size * -0.6))).to_4x4()
               )
             # Turret housing
@@ -361,9 +444,9 @@ def add_weapons_to_face(bm, face) :
             turret_house_mat = \
               (
                     face_matrix
-                *
+                @
                     Matrix.Rotation(upward_angle, 3, "X").to_4x4()
-                *
+                @
                     Matrix.Translation(Vector((0, weapon_size * -0.4, 0))).to_4x4()
               )
             bmesh.ops.create_cone \
@@ -389,7 +472,7 @@ def add_weapons_to_face(bm, face) :
                 depth = weapon_depth * 6,
                 matrix =
                         turret_house_mat
-                    *
+                    @
                         Matrix.Translation(Vector((weapon_size * 0.2, 0, -weapon_size))).to_4x4()
               )
             bmesh.ops.create_cone \
@@ -403,7 +486,7 @@ def add_weapons_to_face(bm, face) :
                 depth = weapon_depth * 6,
                 matrix =
                         turret_house_mat
-                    *
+                    @
                         Matrix.Translation(Vector((weapon_size * -0.2, 0, -weapon_size))).to_4x4()
               )
         #end for v in range(vertical_step)
@@ -540,107 +623,181 @@ def add_disc_to_face(bm, face) :
     #end for
 #end add_disc_to_face
 
-def create_texture(filename, use_alpha) :
-    # Creates an image texture given filename relative to my
-    # “textures” subdirectory.
-    name = os.path.splitext(filename)[0]
-    filepath = resource_path("textures", filename)
-    img = bpy.data.images.load(filepath)
-    img.use_alpha = use_alpha
-    img.pack()
-    tex = bpy.data.textures.new(name, "IMAGE")
-    tex.image = img
-    return tex
-#end create_texture
-
-def add_hull_normal_map(mat, hull_normal_colortex) :
-    # Adds a hull normal map texture slot to a material.
-    mtex = mat.texture_slots.add()
-    mtex.texture = hull_normal_colortex
-    mtex.texture_coords = "GLOBAL" # global UVs, yolo
-    mtex.mapping = "CUBE"
-    mtex.use_map_color_diffuse = False
-    mtex.use_map_normal = True
-    mtex.normal_factor = 1
-    mtex.bump_method = "BUMP_BEST_QUALITY"
-#end add_hull_normal_map
-
-def set_hull_mat_basics(mat, color, hull_normal_colortex) :
-    # Sets some basic properties for a hull material.
-    mat.specular_intensity = 0.1
-    mat.diffuse_color = color
-    add_hull_normal_map(mat, hull_normal_colortex)
-#end set_hull_mat_basics
-
 def create_materials() :
     # Creates all our materials and returns them as a list.
-    ret = []
+
+    def define_tex_coords_common() :
+        # creates a node group that defines a common coordinate system
+        # for all my image textures.
+        tex_coords_common = bpy.data.node_groups.new("SpaceShip.TexCoordsCommon", "ShaderNodeTree")
+        ctx = NodeContext(tex_coords_common, (-100, 0))
+        tex_coords = ctx.new_node("ShaderNodeTexCoord", ctx.step_across(200))
+        group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        ctx.link(tex_coords.outputs["Object"], group_output.inputs[0])
+        group_output.inputs[0].name = tex_coords_common.outputs[0].name = "Coords"
+        return tex_coords_common
+    #end define_tex_coords_common
+
+    tex_coords_common = define_tex_coords_common()
+
+    def create_texture(ctx, filename, use_alpha, is_color) :
+        # Creates an image texture node given filename relative to my
+        # “textures” subdirectory. Returns the output terminal to be linked
+        # to wherever the texture colour is needed.
+        img = load_image(filename, use_alpha, is_color)
+        coords = ctx.new_node("ShaderNodeGroup", ctx.step_across(200))
+        coords.node_tree = tex_coords_common
+        tex = ctx.new_node("ShaderNodeTexImage", ctx.step_across(300))
+        tex.image = img
+        tex.projection = "BOX"
+        ctx.link(coords.outputs[0], tex.inputs[0])
+        return tex.outputs["Color"]
+    #end create_texture
+
+    def define_normals_common() :
+        # defines a node group for the normal-mapping texture to be used
+        # across different hull materials.
+        normals_common = bpy.data.node_groups.new("SpaceShip.NormalsCommon", "ShaderNodeTree")
+        ctx = NodeContext(normals_common, (-300, 0))
+        tex_out = create_texture \
+          (
+            ctx,
+            filename = "hull_normal.png",
+            use_alpha = True,
+            is_color = False
+          )
+        normal_map = ctx.new_node("ShaderNodeNormalMap", ctx.step_across(200))
+        ctx.link(tex_out, normal_map.inputs["Color"])
+        normal_map.inputs["Strength"].default_value = 1
+        group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
+        group_output.inputs[0].name = normals_common.outputs[0].name = "Normal"
+        deselect_all(normals_common)
+        return normals_common
+    #end define_normals_common
+
+    normals_common = define_normals_common()
+
+    def set_hull_mat_basics(mat, base_color) :
+        # Sets some basic properties for a hull material.
+        main_shader = find_main_shader(mat)
+        ctx = NodeContext(mat.node_tree, tuple(main_shader.location))
+        ctx.step_across(-400)
+        ctx.push_pos()
+        ctx.step_down(200)
+        main_shader.inputs["Base Color"].default_value = base_color
+        main_shader.inputs["Specular"].default_value = 0.1
+        normal_map = ctx.new_node("ShaderNodeGroup", ctx.step_across(200))
+        normal_map.node_tree = normals_common
+        ctx.link(normal_map.outputs[0], main_shader.inputs["Normal"])
+        ctx.pop_pos()
+        deselect_all(mat.node_tree)
+        return ctx, main_shader # for adding further nodes if needed
+    #end set_hull_mat_basics
+
+    def set_hull_mat_emissive(mat, color, strength) :
+        # does common setup for emissive hull materials (windows, engines and other lights)
+        main_shader = find_main_shader(mat)
+        main_shader.inputs["Emission"].default_value = tuple(c * strength for c in color)
+        deselect_all(mat.node_tree)
+    #end set_hull_mat_emissive
+
+#begin create_materials
+
+    materials = []
     for material in MATERIAL :
-        ret.append(bpy.data.materials.new(material.name.lower()))
+        mat = bpy.data.materials.new(material.name.lower())
+        mat.use_nodes = True
+        materials.append(mat)
     #end for
 
     # Choose a base color for the spaceship hull
-    hull_base_color = hls_to_rgb \
+    hull_base_color = \
       (
-        h = random.random(),
-        l = random.uniform(0.05, 0.5),
-        s = random.uniform(0, 0.25)
+            hls_to_rgb
+              (
+                h = random.random(),
+                l = random.uniform(0.05, 0.5),
+                s = random.uniform(0, 0.25)
+              )
+        +
+            (1,)
       )
-    # Load up the hull normal map
-    hull_normal_colortex = create_texture("hull_normal.png", True)
-    hull_normal_colortex.use_normal_map = True
 
     # Build the hull texture
-    mat = ret[MATERIAL.HULL]
-    set_hull_mat_basics(mat, hull_base_color, hull_normal_colortex)
+    set_hull_mat_basics(materials[MATERIAL.HULL], hull_base_color)
 
     # Build the hull_lights texture
-    mat = ret[MATERIAL.HULL_LIGHTS]
-    set_hull_mat_basics(mat, hull_base_color, hull_normal_colortex)
-
+    ctx, main_shader = set_hull_mat_basics(materials[MATERIAL.HULL_LIGHTS], hull_base_color)
+      # actually hull_base_color has no effect here, overridden by a node connection below
     # Add a diffuse layer that sets the window color
-    mtex = mat.texture_slots.add()
-    mtex.texture = create_texture("hull_lights_diffuse.png", True)
-    mtex.texture_coords = "GLOBAL"
-    mtex.mapping = "CUBE"
-    mtex.blend_type = "ADD"
-    mtex.use_map_color_diffuse = True
-    mtex.use_rgb_to_intensity = True
-    mtex.color = hls_to_rgb \
+    ctx.step_down(400)
+    ctx.step_across(-1400)
+    base_window = create_texture \
       (
-        h = random.random(),
-        l = random.uniform(0.5, 1),
-        s = random.uniform(0, 0.5)
+        ctx,
+        filename = "hull_lights_diffuse.png",
+        use_alpha = True,
+        is_color = True
       )
-
+    mixer1 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer1.blend_type = "ADD"
+    mixer1.inputs[0].default_value = 1.0
+    save_pos = ctx.pos
+    ctx.step_across(200)
+    mixer1.inputs[1].default_value = \
+      (
+            hls_to_rgb
+              (
+                h = random.random(),
+                l = random.uniform(0.5, 1),
+                s = random.uniform(0, 0.5)
+              )
+        +
+            (1,)
+      )
+    ctx.pos = save_pos
+    ctx.step_down(200)
     # Add an emissive layer that lights up the windows
-    mtex = mat.texture_slots.add()
-    mtex.texture = create_texture("hull_lights_emit.png", False)
-    mtex.texture_coords = "GLOBAL"
-    mtex.mapping = "CUBE"
-    mtex.use_map_emit = True
-    mtex.emit_factor = 2.0
-    mtex.blend_type = "ADD"
-    mtex.use_map_color_diffuse = False
+    window_light = create_texture \
+      (
+        ctx,
+        filename = "hull_lights_emit.png",
+        use_alpha = False,
+        is_color = True
+      )
+    amplifier = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
+    amplifier.blend_type = "MULTIPLY"
+    amplifier.inputs[0].default_value = 1.0
+    ctx.link(window_light, amplifier.inputs[1])
+    amplifier.inputs[2].default_value = 3 * (2.0,) + (1,)
+    mixer2 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer2.blend_type = "ADD"
+    mixer2.inputs[0].default_value = 1.0
+    ctx.link(base_window, mixer1.inputs[1])
+    mixer1.inputs[2].default_value = hull_base_color
+    ctx.link(mixer1.outputs[0], mixer2.inputs[1])
+    ctx.link(amplifier.outputs[0], mixer2.inputs[2])
+    ctx.link(mixer2.outputs[0], main_shader.inputs["Base Color"])
+    deselect_all(ctx.graph)
 
     # Build the hull_dark texture
-    mat = ret[MATERIAL.HULL_DARK]
-    set_hull_mat_basics(mat, [0.3 * x for x in hull_base_color], hull_normal_colortex)
+    set_hull_mat_basics \
+      (
+        materials[MATERIAL.HULL_DARK],
+        tuple(0.3 * x for x in hull_base_color[:3]) + (1,)
+      )
 
     # Choose a glow color for the exhaust + glow discs
-    glow_color = hls_to_rgb(h = random.random(), l = random.uniform(0.5, 1), s = 1)
+    glow_color = hls_to_rgb(h = random.random(), l = random.uniform(0.5, 1), s = 1) + (1,)
 
     # Build the exhaust_burn texture
-    mat = ret[MATERIAL.EXHAUST_BURN]
-    mat.diffuse_color = glow_color
-    mat.emit = 1.0
+    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], glow_color, 1.0)
 
     # Build the glow_disc texture
-    mat = ret[MATERIAL.GLOW_DISC]
-    mat.diffuse_color = glow_color
-    mat.emit = 1.0
+    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], glow_color, 1.0)
 
-    return ret
+    return materials
 #end create_materials
 
 class parms_defaults :
@@ -889,11 +1046,11 @@ def generate_spaceship(parms) :
 
     # Apply horizontal symmetry sometimes
     if parms.allow_horizontal_symmetry and random.random() > 0.5 :
-        bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = 1)
+        bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = "Y")
     #end if
     # Apply vertical symmetry sometimes - this can cause spaceship "islands", so disabled by default
     if parms.allow_vertical_symmetry and random.random() > 0.5 :
-        bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = 2)
+        bmesh.ops.symmetrize(bm, input = bm.verts[:] + bm.edges[:] + bm.faces[:], direction = "Z")
     #end if
 
     # Finish up, write the bmesh into a new mesh
@@ -902,12 +1059,11 @@ def generate_spaceship(parms) :
     bm.free()
 
     # Add the mesh to the scene
-    scene = bpy.context.scene
     obj = bpy.data.objects.new(me.name, me)
-    scene.objects.link(obj)
+    bpy.context.scene.collection.objects.link(obj)
     # Select and make active
-    scene.objects.active = obj
-    obj.select = True
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
 
     # Recenter the object to its center of mass
     bpy.ops.object.origin_set(type = "ORIGIN_CENTER_OF_MASS")
