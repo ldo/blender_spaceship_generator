@@ -652,7 +652,7 @@ def create_materials() :
     mat.diffuse_color = glow_color
     mat.emit = 1.0
 
-    # Build the glow_disc texture -- not used anywhere?
+    # Build the glow_disc texture
     mat = ret[MATERIAL.GLOW_DISC]
     mat.diffuse_color = glow_color
     mat.emit = 1.0
@@ -780,26 +780,27 @@ def generate_spaceship(parms) :
     #end for face in bm.faces[:]
 
     # Add some large asynmmetrical sections of the hull that stick out
-    if parms.create_asymmetry_segments :
+    if (
+            parms.create_asymmetry_segments
+        and
+            parms.num_asymmetry_segments_max >= parms.num_asymmetry_segments_min
+    ) :
         for face in bm.faces[:] :
-            # Skip any long thin faces as it'll probably look stupid
-            if get_aspect_ratio(face) > 4 :
-                continue
             if (
-                    parms.num_asymmetry_segments_max >= parms.num_asymmetry_segments_min
+                    get_aspect_ratio(face) <= 4
+                      # Skip any long thin faces as it'll probably look stupid
                 and
                     random() > 0.85
             ) :
                 hull_piece_length = uniform(0.1, 0.4)
                 for i in \
-                    range(randrange \
+                    range(randrange
                       (
                         parms.num_asymmetry_segments_min,
                         parms.num_asymmetry_segments_max + 1
                       )) \
                 :
                     face = extrude_face(bm, face, hull_piece_length)
-
                     # Maybe apply some scaling
                     if random() > 0.25 :
                         s = 1 / uniform(1.1, 1.5)
@@ -911,13 +912,13 @@ def generate_spaceship(parms) :
     #end if
 
     # Finish up, write the bmesh into a new mesh
-    me = bpy.data.meshes.new("Mesh")
+    me = bpy.data.meshes.new("Spaceship")
     bm.to_mesh(me)
     bm.free()
 
     # Add the mesh to the scene
     scene = bpy.context.scene
-    obj = bpy.data.objects.new("Spaceship", me)
+    obj = bpy.data.objects.new(me.name, me)
     scene.objects.link(obj)
     # Select and make active
     scene.objects.active = obj
