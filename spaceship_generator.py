@@ -31,24 +31,6 @@ def resource_path(*path_components) :
     return os.path.join(DIR, *path_components)
 #end resource_path
 
-# Deletes all existing spaceships and unused materials from the scene
-def reset_scene() :
-    for item in bpy.data.objects :
-        item.select = item.name.startswith("Spaceship")
-    #end for
-    bpy.ops.object.delete()
-    for material in bpy.data.materials :
-        if not material.users :
-            bpy.data.materials.remove(material)
-        #end if
-    #end for
-    for texture in bpy.data.textures :
-        if not texture.users :
-            bpy.data.textures.remove(texture)
-        #end if
-    #end for
-#end reset_scene
-
 # Extrudes a face along its normal by translate_forwards units.
 # Returns the new face, and optionally fills out extruded_face_list
 # with all the additional side faces created from the extrusion.
@@ -957,6 +939,24 @@ def generate_spaceship(parms) :
 #end generate_spaceship
 
 if __name__ == "__main__" :
+
+    # Deletes all existing spaceships and unused materials from the scene
+    def reset_scene() :
+        for item in bpy.data.objects :
+            item.select = item.name.startswith("Spaceship")
+        #end for
+        bpy.ops.object.delete()
+        for material in bpy.data.materials :
+            if not material.users :
+                bpy.data.materials.remove(material)
+            #end if
+        #end for
+        for texture in bpy.data.textures :
+            if not texture.users :
+                bpy.data.textures.remove(texture)
+            #end if
+        #end for
+    #end reset_scene
 
     # When true, this script will generate a single spaceship in the scene.
     # When false, this script will render multiple movie frames showcasing lots of ships.
