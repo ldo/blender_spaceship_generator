@@ -1068,7 +1068,7 @@ def generate_spaceship(parms) :
     # Recenter the object to its center of mass
     bpy.ops.object.origin_set(type = "ORIGIN_CENTER_OF_MASS")
     ob = bpy.context.object
-    ob.location = (0, 0, 0)
+    ob.location = bpy.context.scene.cursor.location.copy()
 
     # Add a fairly broad bevel modifier to angularize shape
     if parms.add_bevel_modifier :
