@@ -7,7 +7,7 @@ A Blender script to procedurally generate 3D spaceships from a random seed.
 Usage
 -----
 * Install Blender 2.82 or greater: http://blender.org/download/
-* Download newest `add_mesh_SpaceshipGenerator.zip` from the [Releases](https://github.com/a1studmuffin/SpaceshipGenerator/releases) section
+* Download newest `add_mesh_SpaceshipGenerator.zip` from the [Releases](https://github.com/ldo/blender_spaceship_generator/releases) section
 * Under File > User Preferences... > Add-ons > Install From File... open the downloaded ZIP file
 * Under File > User Preferences... > Add-ons enable this script (search for "spaceship")
 * Add a spaceship in the 3D View under Add > Mesh > Spaceship
