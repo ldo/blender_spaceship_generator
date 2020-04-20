@@ -682,7 +682,7 @@ def create_materials() :
         # Sets some basic properties for a hull material.
         main_shader = find_main_shader(mat)
         ctx = NodeContext(mat.node_tree, tuple(main_shader.location))
-        ctx.step_across(-400)
+        ctx.step_across(-300)
         ctx.push_pos()
         ctx.step_down(200)
         main_shader.inputs["Base Color"].default_value = base_color
@@ -731,8 +731,9 @@ def create_materials() :
     ctx, main_shader = set_hull_mat_basics(materials[MATERIAL.HULL_LIGHTS], hull_base_color)
       # actually hull_base_color has no effect here, overridden by a node connection below
     # Add a diffuse layer that sets the window color
-    ctx.step_down(400)
-    ctx.step_across(-1400)
+    ctx.step_down(300)
+    ctx.step_across(-800)
+    save_pos = ctx.pos
     base_window = create_texture \
       (
         ctx,
@@ -743,8 +744,6 @@ def create_materials() :
     mixer1 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
     mixer1.blend_type = "ADD"
     mixer1.inputs[0].default_value = 1.0
-    save_pos = ctx.pos
-    ctx.step_across(200)
     mixer1.inputs[1].default_value = \
       (
             hls_to_rgb
@@ -757,7 +756,7 @@ def create_materials() :
             (1,)
       )
     ctx.pos = save_pos
-    ctx.step_down(200)
+    ctx.step_down(300)
     # Add an emissive layer that lights up the windows
     window_light = create_texture \
       (
@@ -771,6 +770,7 @@ def create_materials() :
     amplifier.inputs[0].default_value = 1.0
     ctx.link(window_light, amplifier.inputs[1])
     amplifier.inputs[2].default_value = 3 * (2.0,) + (1,)
+    ctx.step_down(-200)
     mixer2 = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
     mixer2.blend_type = "ADD"
     mixer2.inputs[0].default_value = 1.0
