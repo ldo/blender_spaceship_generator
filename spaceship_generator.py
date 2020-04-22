@@ -1063,6 +1063,7 @@ def generate_spaceship(parms) :
     obj = bpy.data.objects.new(me.name, me)
     bpy.context.scene.collection.objects.link(obj)
     # Select and make active
+    bpy.ops.object.select_all(action = "DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
