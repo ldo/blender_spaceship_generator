@@ -633,6 +633,8 @@ def create_materials() :
         ctx = NodeContext(tex_coords_common, (-100, 0))
         tex_coords = ctx.new_node("ShaderNodeTexCoord", ctx.step_across(200))
         group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        tex_coords_common.outputs.new("NodeSocketVector", "Coords")
+          # work around intermittent crash on following line
         ctx.link(tex_coords.outputs["Object"], group_output.inputs[0])
         group_output.inputs[0].name = tex_coords_common.outputs[0].name = "Coords"
         return tex_coords_common
@@ -670,6 +672,8 @@ def create_materials() :
         ctx.link(tex_out, normal_map.inputs["Color"])
         normal_map.inputs["Strength"].default_value = 1
         group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        normals_common.outputs.new("NodeSocketVector", "Normal")
+          # work around intermittent crash on following line
         ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
         group_output.inputs[0].name = normals_common.outputs[0].name = "Normal"
         deselect_all(normals_common)
