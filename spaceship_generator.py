@@ -22,7 +22,7 @@ from enum import \
 from colorsys import \
     hls_to_rgb
 
-deg = math.pi / 180 # conversion factor
+deg = math.pi / 180 # angle unit conversion factor
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -50,52 +50,46 @@ class NodeContext :
     "convenience class for assembling a nicely-laid-out node graph."
 
     def __init__(self, graph, location) :
+        "“graph” is the node tree for which to manage the addition of nodes." \
+        " “location” is the initial location at which to start placing new nodes."
         self.graph = graph
-        self.location = [location[0], location[1]]
-        self.pos_save = []
+        self._location = [location[0], location[1]]
     #end __init__
 
     def step_across(self, width) :
         "returns the current position and advances it across by width."
-        result = self.location[:]
-        self.location[0] += width
+        result = self._location[:]
+        self._location[0] += width
         return result
     #end step_across
 
     def step_down(self, height) :
         "returns the current position and advances it down by height."
-        result = self.location[:]
-        self.location[1] -= height
+        result = self._location[:]
+        self._location[1] -= height
         return result
      #end step_down
 
     @property
     def pos(self) :
-        return (self.location[0], self.location[1])
+        "the current position (read/write)."
+        return (self._location[0], self._location[1])
     #end pos
 
     @pos.setter
     def pos(self, pos) :
-        self.location[:] = [pos[0], pos[1]]
+        self._location[:] = [pos[0], pos[1]]
     #end pos
 
-    def push_pos(self) :
-        "saves the current location on the stack."
-        self.pos_save.append(list(self.location))
-    #end push_pos
-
-    def pop_pos(self) :
-        "restores the last-stacked location."
-        self.location[:] = self.pos_save.pop()
-    #end pop_pos
-
-    def new_node(self, type, pos) :
+    def node(self, type, pos) :
+        "creates a new node of type “type” at position “pos”, and returns it."
         node = self.graph.nodes.new(type)
         node.location = (pos[0], pos[1])
         return node
-    #end new_node
+    #end node
 
     def link(self, frôm, to) :
+        "creates a link from output “frôm” to input “to”."
         self.graph.links.new(frôm, to)
     #end link
 
@@ -217,12 +211,12 @@ def get_aspect_ratio(face) :
 #end get_aspect_ratio
 
 def is_rear_face(face) :
-    # is this face is pointing behind the ship
+    # is this face pointing behind the ship
     return face.normal.x < -0.95
 #end is_rear_face
 
 class MATERIAL(IntEnum) :
-    "names for material slot indices."
+    "names for material slot indices. Must be densely-assigned from 0."
     HULL = 0            # Plain spaceship hull
     HULL_LIGHTS = 1     # Spaceship hull with emissive windows
     HULL_DARK = 2       # Plain Spaceship hull, darkened
@@ -631,8 +625,8 @@ def create_materials() :
         # for all my image textures.
         tex_coords_common = bpy.data.node_groups.new("SpaceShip.TexCoordsCommon", "ShaderNodeTree")
         ctx = NodeContext(tex_coords_common, (-100, 0))
-        tex_coords = ctx.new_node("ShaderNodeTexCoord", ctx.step_across(200))
-        group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        tex_coords = ctx.node("ShaderNodeTexCoord", ctx.step_across(200))
+        group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         tex_coords_common.outputs.new("NodeSocketVector", "Coords")
           # work around intermittent crash on following line
         ctx.link(tex_coords.outputs["Object"], group_output.inputs[0])
@@ -647,9 +641,9 @@ def create_materials() :
         # “textures” subdirectory. Returns the output terminal to be linked
         # to wherever the texture colour is needed.
         img = load_image(filename, use_alpha, is_color)
-        coords = ctx.new_node("ShaderNodeGroup", ctx.step_across(200))
+        coords = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         coords.node_tree = tex_coords_common
-        tex = ctx.new_node("ShaderNodeTexImage", ctx.step_across(300))
+        tex = ctx.node("ShaderNodeTexImage", ctx.step_across(300))
         tex.image = img
         tex.projection = "BOX"
         ctx.link(coords.outputs[0], tex.inputs[0])
@@ -668,10 +662,10 @@ def create_materials() :
             use_alpha = True,
             is_color = False
           )
-        normal_map = ctx.new_node("ShaderNodeNormalMap", ctx.step_across(200))
+        normal_map = ctx.node("ShaderNodeNormalMap", ctx.step_across(200))
         ctx.link(tex_out, normal_map.inputs["Color"])
         normal_map.inputs["Strength"].default_value = 1
-        group_output = ctx.new_node("NodeGroupOutput", ctx.step_across(200))
+        group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         normals_common.outputs.new("NodeSocketVector", "Normal")
           # work around intermittent crash on following line
         ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
@@ -687,20 +681,20 @@ def create_materials() :
         main_shader = find_main_shader(mat)
         ctx = NodeContext(mat.node_tree, tuple(main_shader.location))
         ctx.step_across(-300)
-        ctx.push_pos()
+        save_pos = ctx.pos
         ctx.step_down(200)
         main_shader.inputs["Base Color"].default_value = base_color
         main_shader.inputs["Specular"].default_value = 0.1
-        normal_map = ctx.new_node("ShaderNodeGroup", ctx.step_across(200))
+        normal_map = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         normal_map.node_tree = normals_common
         ctx.link(normal_map.outputs[0], main_shader.inputs["Normal"])
-        ctx.pop_pos()
+        ctx.pos = save_pos
         deselect_all(mat.node_tree)
         return ctx, main_shader # for adding further nodes if needed
     #end set_hull_mat_basics
 
     def set_hull_mat_emissive(mat, color, strength) :
-        # does common setup for emissive hull materials (windows, engines and other lights)
+        # does common setup for very basic emissive hull materials (engines, landing discs)
         main_shader = find_main_shader(mat)
         main_shader.inputs["Emission"].default_value = tuple(c * strength for c in color)
         deselect_all(mat.node_tree)
@@ -745,8 +739,9 @@ def create_materials() :
         use_alpha = True,
         is_color = True
       )
-    mixer = ctx.new_node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
     mixer.blend_type = "ADD"
+      # maybe “MULTIPLY” makes more sense, but then the unlit area looks darker than the hull
     mixer.inputs[0].default_value = 1.0
     ctx.link(base_window, mixer.inputs[1])
     mixer.inputs[2].default_value = \
@@ -760,11 +755,11 @@ def create_materials() :
         +
             (1,)
       )
-    color_shader = ctx.new_node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
+    color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
     ctx.link(mixer.outputs[0], color_shader.inputs["Color"])
-    add_shader = ctx.new_node("ShaderNodeAddShader", ctx.step_across(200))
+    add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
     ctx.link(color_shader.outputs[0], add_shader.inputs[0])
-    material_output = ctx.new_node("ShaderNodeOutputMaterial", ctx.step_across(200))
+    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
     ctx.link(add_shader.outputs[0], material_output.inputs[0])
     ctx.pos = save_pos
     ctx.step_down(300)
@@ -776,7 +771,7 @@ def create_materials() :
         use_alpha = False,
         is_color = True
       )
-    light_shader = ctx.new_node("ShaderNodeEmission", ctx.step_across(200))
+    light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
     ctx.link(window_light, light_shader.inputs["Color"])
     light_shader.inputs["Strength"].default_value = 2.0
     ctx.link(light_shader.outputs[0], add_shader.inputs[1])
