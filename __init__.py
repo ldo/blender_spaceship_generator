@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 2, 2),
+        "version" : (1, 3, 0),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -19,6 +19,7 @@ else :
     from . import spaceship_generator
 #end if
 
+import random
 import bpy
 from bpy.props import \
     BoolProperty, \
@@ -32,10 +33,15 @@ class GenerateSpaceship(bpy.types.Operator) :
     bl_options = {"REGISTER", "UNDO"}
 
     df = spaceship_generator.parms_defaults # temp short name
-    random_seed : StringProperty \
+    geom_ranseed : StringProperty \
       (
-        default = df.random_seed,
-        name = "Seed"
+        default = df.geom_ranseed,
+        name = "Geometry Seed"
+      )
+    mat_ranseed : StringProperty \
+      (
+        default = df.mat_ranseed,
+        name = "Material Seed"
       )
     num_hull_segments_min : IntProperty \
       (
@@ -96,6 +102,17 @@ class GenerateSpaceship(bpy.types.Operator) :
         name = "Assign Materials"
       )
     del df
+
+    def invoke(self, context, event) :
+        maxseed = 1e6
+          # [0 .. 999999] is enough to be interesting by
+          # default. Users can always replace seeds with
+          # anything they like.
+        self.geom_ranseed = str(random.randrange(maxseed))
+        self.mat_ranseed = str(random.randrange(maxseed))
+        spaceship_generator.generate_spaceship(self)
+        return {"FINISHED"}
+    #end invoke
 
     def execute(self, context) :
         spaceship_generator.generate_spaceship(self)
