@@ -332,11 +332,13 @@ def create_materials(mat_random) :
     # Build the hull texture
     set_hull_mat_basics(materials[MATERIAL.HULL], hull_base_color)
 
-    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-400, 0))
+    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0))
     for node in ctx.graph.nodes :
       # clear out default nodes
         ctx.graph.nodes.remove(node)
     #end for
+    normal_map = ctx.node("ShaderNodeGroup", ctx.step_down(200))
+    normal_map.node_tree = normals_common
     save_pos = ctx.pos
     # Add a diffuse layer that sets the window color
     base_window = create_texture \
@@ -364,6 +366,7 @@ def create_materials(mat_random) :
       )
     color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
     ctx.link(mixer.outputs[0], color_shader.inputs["Color"])
+    ctx.link(normal_map.outputs[0], color_shader.inputs["Normal"])
     add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
     ctx.link(color_shader.outputs[0], add_shader.inputs[0])
     material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
