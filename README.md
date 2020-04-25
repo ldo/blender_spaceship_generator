@@ -36,10 +36,13 @@ The following screenshots were created using extreme values for the number of hu
 
 Tips and Tricks
 ---------------
-* By default the script will delete all objects starting with `Spaceship` before generating a new spaceship. To disable this feature, remove or comment out the call to `reset_scene()` around line 735 in the main function.
-* You can provide a seed to the `generate_spaceship()` function to always generate the same spaceship. For example, `generate_spaceship('michael')`.
-* The `generate_spaceship()` function takes many more parameters that affect the generation process. Try playing with them!
+* The seeds used for generating random geometry and materials default to random integers,
+but you can replace these with any string. Different seeds are chosen every time you create
+a new spaceship, but they do not change when you edit the parameters for regenerating the
+current spaceship (unless you change them).
 * You can replace the textures with your own ones. All textures are applied using global-space cube UVs. `hull_normal.png` is a normal map that adds extra surface "greebles". `hull_lights_diffuse.png` is an additive diffuse texture to set the color of the window lights. `hull_lights_emit.png` is an emissive texture to make the windows glow in darkness.
+* Unfortunately, the emissive materials don’t look so good in the Eevee renderer. For
+best results, use Cycles.
 
 Credits
 -------
@@ -47,7 +50,7 @@ Written for fun as part of the [/r/proceduralgeneration](https://www.reddit.com/
 
 Released under the [MIT License].
 
-Authored and maintained by Michael Davies.
+Originally authored by Michael Davies, this version adapted by Lawrence D’Oliveiro.
 
 > GitHub [@a1studmuffin](https://github.com/a1studmuffin)
 > Twitter [@butterparty](https://twitter.com/butterparty)
