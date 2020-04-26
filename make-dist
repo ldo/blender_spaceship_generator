@@ -1,16 +1,19 @@
 #!/usr/bin/python3
 #+
-# Generate an addon release archive.
+# Generate an addon release archive. For repeatability, the timestamp
+# for each item is taken from the last commit affecting that item.
 #-
 
-import os.path
+import os
+import time
+import subprocess
 import zipfile
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 
 basename = "add_mesh_SpaceshipGenerator"
 outfilename = "%s.zip" % basename
-out = zipfile.ZipFile(outfilename, "w", zipfile.ZIP_DEFLATED)
+out = zipfile.ZipFile(outfilename, "w")
 for filename in \
     (
         "__init__.py",
@@ -21,7 +24,20 @@ for filename in \
         "icons/spaceship.png",
     ) \
 :
-    out.write(os.path.join(SRC_DIR, filename), "/".join((basename, filename)))
+    pathname = os.path.join(SRC_DIR, filename)
+    item = zipfile.ZipInfo.from_file(pathname, "/".join((basename, filename)))
+    item.compress_type = zipfile.ZIP_DEFLATED
+    timestamp = subprocess.check_output \
+      (
+        args = ("git", "log", "--format=%ct", "-n1", pathname)
+      ).strip()
+    try :
+        timestamp = int(timestamp)
+    except ValueError :
+        raise RuntimeError("cannot find commit entry for %s" % filename)
+    #end try
+    item.date_time = time.gmtime(timestamp)[:6]
+    out.writestr(item, open(pathname, "rb").read())
 #end for
 out.close()
 
