@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 #+
 # Generate an addon release archive. For repeatability, the timestamp
-# for each item is taken from the last commit affecting that item.
+# and contents for each file are taken from the last commit affecting
+# that file.
 #-
 
 import os
@@ -9,11 +10,9 @@ import time
 import subprocess
 import zipfile
 
-SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-
 basename = "add_mesh_SpaceshipGenerator"
 outfilename = "%s.zip" % basename
-out = zipfile.ZipFile(outfilename, "w")
+out = zipfile.ZipFile(outfilename, "x")
 for filename in \
     (
         "__init__.py",
@@ -24,20 +23,28 @@ for filename in \
         "icons/spaceship.png",
     ) \
 :
-    pathname = os.path.join(SRC_DIR, filename)
-    item = zipfile.ZipInfo.from_file(pathname, "/".join((basename, filename)))
+    item = zipfile.ZipInfo.from_file(filename, "/".join((basename, filename)))
     item.compress_type = zipfile.ZIP_DEFLATED
-    timestamp = subprocess.check_output \
+    info = subprocess.check_output \
       (
-        args = ("git", "log", "--format=%ct", "-n1", pathname)
+        args = ("git", "log", "--format=%ct:%H", "-n1", "--", filename)
       ).strip()
-    try :
-        timestamp = int(timestamp)
-    except ValueError :
+    if info == b"" :
         raise RuntimeError("cannot find commit entry for %s" % filename)
-    #end try
+    #end if
+    timestamp, commit_hash = info.split(b":")
+    timestamp = int(timestamp)
+    info = subprocess.check_output \
+      (
+        args = ("git", "ls-tree", commit_hash, filename)
+      ).strip()
+    object_hash = info.split(b"\t")[0].split(b" ")[2].decode()
+    object_contents = subprocess.check_output \
+      (
+        args = ("git", "show", object_hash)
+      )
     item.date_time = time.gmtime(timestamp)[:6]
-    out.writestr(item, open(pathname, "rb").read())
+    out.writestr(item, object_contents)
 #end for
 out.close()
 
