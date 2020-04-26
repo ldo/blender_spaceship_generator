@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 3, 1),
+        "version" : (1, 3, 2),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -21,6 +21,7 @@ else :
 
 import random
 import bpy
+import bpy.utils.previews
 from bpy.props import \
     BoolProperty, \
     IntProperty, \
@@ -126,11 +127,28 @@ _classes_ = \
         GenerateSpaceship,
     )
 
+icons = None
+
 def menu_func(self, context) :
-    self.layout.operator(GenerateSpaceship.bl_idname, text = "Spaceship")
+    self.layout.operator \
+      (
+        GenerateSpaceship.bl_idname,
+        text = "Spaceship",
+        icon_value = icons["spaceship"].icon_id
+      )
 #end menu_func
 
 def register() :
+    global icons
+    if icons == None :
+        icons = bpy.utils.previews.new()
+        icons.load \
+          (
+            "spaceship",
+            spaceship_generator.resource_path("icons", "spaceship.png"),
+            "IMAGE"
+          )
+    #end if
     for ċlass in _classes_ :
         bpy.utils.register_class(ċlass)
     #end for
@@ -138,10 +156,15 @@ def register() :
 #end register
 
 def unregister() :
+    global icons
     bpy.types.VIEW3D_MT_mesh_add.remove(menu_func)
     for ċlass in _classes_ :
         bpy.utils.unregister_class(ċlass)
     #end for
+    if icons != None :
+        bpy.utils.previews.remove(icons)
+        icons = None
+    #end if
 #end unregister
 
 if __name__ == "__main__" :
