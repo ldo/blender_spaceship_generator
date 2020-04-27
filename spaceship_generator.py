@@ -224,7 +224,7 @@ class MATERIAL(IntEnum) :
     GLOW_DISC = 4       # Emissive landing pad disc material
 #end MATERIAL
 
-def create_materials(mat_random) :
+def create_materials(parms, mat_random) :
     # Creates all our materials and returns them as a list.
 
     def define_tex_coords_common() :
@@ -261,7 +261,11 @@ def create_materials(mat_random) :
         # defines a node group for the normal-mapping texture to be used
         # across different hull materials.
         normals_common = bpy.data.node_groups.new("SpaceShip.NormalsCommon", "ShaderNodeTree")
-        ctx = NodeContext(normals_common, (-300, 0))
+        ctx = NodeContext(normals_common, (-500, 0))
+        group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
+        normals_common.inputs.new("NodeSocketFloat", "Grunge")
+        normals_common.inputs[0].default_value = parms.grunge_factor
+        save1_pos = ctx.pos
         tex_out = create_texture \
           (
             ctx,
@@ -269,14 +273,27 @@ def create_materials(mat_random) :
             use_alpha = True,
             is_color = False
           )
+        save2_pos = ctx.pos
+        ctx.pos = (save1_pos[0], ctx.pos[1])
+        ctx.step_down(400)
+        dirty = ctx.node("ShaderNodeTexNoise", ctx.step_across(200))
+        dirty.inputs["Scale"].default_value = 10
+        ctx.pos = save2_pos
+        mix = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
+        mix.blend_type = "MIX"
+        #mix.inputs[0].default_value = 0.5
+        ctx.link(group_input.outputs[0], mix.inputs[0])
+        ctx.link(tex_out, mix.inputs[1])
+        ctx.link(dirty.outputs[1], mix.inputs[2])
         normal_map = ctx.node("ShaderNodeNormalMap", ctx.step_across(200))
-        ctx.link(tex_out, normal_map.inputs["Color"])
+        ctx.link(mix.outputs[0], normal_map.inputs["Color"])
         normal_map.inputs["Strength"].default_value = 1
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         normals_common.outputs.new("NodeSocketVector", "Normal")
           # work around intermittent crash on following line
         ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
-        group_output.inputs[0].name = normals_common.outputs[0].name = "Normal"
+        group_input.outputs[0].name = normals_common.inputs[0].name
+        group_output.inputs[0].name = normals_common.outputs[0].name
         deselect_all(normals_common)
         return normals_common
     #end define_normals_common
@@ -420,6 +437,7 @@ class parms_defaults :
     allow_vertical_symmetry = False
     add_bevel_modifier = True
     assign_materials = True
+    grunge_factor = 0.5
 #end parms_defaults
 
 def generate_spaceship(parms) :
@@ -1089,7 +1107,7 @@ def generate_spaceship(parms) :
     if parms.mat_ranseed != "" :
         mat_random.seed(parms.mat_ranseed)
     #end if
-    materials = create_materials(mat_random)
+    materials = create_materials(parms, mat_random)
     for mat in materials :
         if parms.assign_materials :
             me.materials.append(mat)

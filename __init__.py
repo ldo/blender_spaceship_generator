@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 3, 2),
+        "version" : (1, 4, 0),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -24,6 +24,7 @@ import bpy
 import bpy.utils.previews
 from bpy.props import \
     BoolProperty, \
+    FloatProperty, \
     IntProperty, \
     StringProperty
 
@@ -90,7 +91,7 @@ class GenerateSpaceship(bpy.types.Operator) :
     allow_vertical_symmetry : BoolProperty \
       (
         default = df.allow_vertical_symmetry,
-        name="Allow Vertical Symmetry"
+        name = "Allow Vertical Symmetry"
       )
     add_bevel_modifier : BoolProperty \
       (
@@ -101,6 +102,13 @@ class GenerateSpaceship(bpy.types.Operator) :
       (
         default = df.assign_materials,
         name = "Assign Materials"
+      )
+    grunge_factor : FloatProperty \
+      (
+        default = df.grunge_factor,
+        min = 0,
+        max = 1,
+        name = "Material Grunge"
       )
     del df
 
