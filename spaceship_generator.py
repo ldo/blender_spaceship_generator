@@ -1099,6 +1099,7 @@ def generate_spaceship(parms) :
         bevel_modifier.segments = 2
         bevel_modifier.profile = 0.25
         bevel_modifier.limit_method = "NONE"
+        bevel_modifier.use_clamp_overlap = False # no noticeable effect otherwise
     #end if
 
     # Add materials to the spaceship
