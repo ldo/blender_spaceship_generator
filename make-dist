@@ -83,4 +83,4 @@ for filename in \
 #end for
 out.close()
 
-print("created file: %s" % outfilename)
+print("created archive: %s" % outfilename)
