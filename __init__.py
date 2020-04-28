@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 4, 1),
+        "version" : (1, 4, 2),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -111,6 +111,38 @@ class GenerateSpaceship(bpy.types.Operator) :
         name = "Material Grunge"
       )
     del df
+
+    def draw(self, context) :
+        main = self.layout
+        sub = main.box()
+        sub.label(text = "Random Seeds")
+        sub.prop(self, "geom_ranseed", text = "Geometry")
+        sub.prop(self, "mat_ranseed", text = "Material")
+        sub = main.box()
+        sub.label(text = "Hull Segments")
+        row = sub.row()
+        row.prop(self, "num_hull_segments_min", text = "Min")
+        row.prop(self, "num_hull_segments_max", text = "Max")
+        if self.create_asymmetry_segments :
+            sub = main.box()
+            sub.label(text = "Asymmetry Segments")
+            sub.prop(self, "create_asymmetry_segments", text = "Create")
+            row = sub.row()
+            row.prop(self, "num_asymmetry_segments_min", text = "Min")
+            row.prop(self, "num_asymmetry_segments_max", text = "Max")
+        else :
+            main.prop(self, "create_asymmetry_segments", text = "Create Asymmetry Segments")
+        #end if
+        main.prop(self, "create_face_detail", text = "Create Face Detail")
+        sub = main.box()
+        sub.label(text = "Allow Symmetry")
+        row = sub.row()
+        row.prop(self, "allow_horizontal_symmetry", text = "Horizontal")
+        row.prop(self, "allow_vertical_symmetry", text = "Vertical")
+        main.prop(self, "add_bevel_modifier", text = "Add Bevel Modifier")
+        main.prop(self, "assign_materials", text = "Assign Materials")
+        main.prop(self, "grunge_factor", text = "Material Grunge")
+    #end draw
 
     def invoke(self, context, event) :
         maxseed = 1e6
