@@ -4,9 +4,8 @@
 # and contents for each file are taken from the last commit affecting
 # that file.
 #
-# By default, this script generates an archive for the most recent
-# commit. Optionally, it can take an arg identifying a specific commit
-# (e.g. a tag). For example, the command
+# This script takes an arg identifying a specific commit (e.g. a tag)
+# from which to generate the archive. For example, the command
 #
 #     ./make-dist v1.0
 #
@@ -27,26 +26,18 @@ opts, args = getopt.getopt \
     "",
     []
   )
-if len(args) == 1 :
-    upto = args[0]
-    earliest = subprocess.check_output \
-      (
-        args = ("git", "rev-list", "--reverse", upto)
-      ).split(b"\n")[0].strip().decode()
-elif len(args) == 0 :
-    upto = None
-else :
-    raise getopt.GetoptError("only expecting one arg, the tag to build a release for")
+if len(args) != 1 :
+    raise getopt.GetoptError("expecting exactly one arg, the tag to build a release for")
 #end if
+upto = args[0]
+earliest = subprocess.check_output \
+  (
+    args = ("git", "rev-list", "--reverse", upto)
+  ).split(b"\n")[0].strip().decode()
 
 basename = "add_mesh_SpaceshipGenerator"
 outfilename = "%s%s.zip" % (basename, (lambda : "", lambda : "-" + upto)[upto != None]())
 out = zipfile.ZipFile(outfilename, "x")
-if upto != None :
-    log_range = ("%s..%s" % (earliest, upto),)
-else :
-    log_range = ()
-#end if
 for filename in \
     (
         "__init__.py",
@@ -61,7 +52,7 @@ for filename in \
     item.compress_type = zipfile.ZIP_DEFLATED
     info = subprocess.check_output \
       (
-        args = ("git", "log", "--format=%ct:%H", "-n1") + log_range + ("--", filename)
+        args = ("git", "log", "--format=%ct:%H", "-n1", "%s..%s" % (earliest, upto), "--", filename)
       ).strip()
     if info != b"" :
         timestamp, commit_hash = info.split(b":")
