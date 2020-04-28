@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 4, 2),
+        "version" : (1, 4, 3),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -98,9 +98,9 @@ class GenerateSpaceship(bpy.types.Operator) :
         default = df.add_bevel_modifier,
         name = "Add Bevel Modifier"
       )
-    assign_materials : BoolProperty \
+    create_materials : BoolProperty \
       (
-        default = df.assign_materials,
+        default = df.create_materials,
         name = "Assign Materials"
       )
     grunge_factor : FloatProperty \
@@ -125,8 +125,7 @@ class GenerateSpaceship(bpy.types.Operator) :
         row.prop(self, "num_hull_segments_max", text = "Max")
         if self.create_asymmetry_segments :
             sub = main.box()
-            sub.label(text = "Asymmetry Segments")
-            sub.prop(self, "create_asymmetry_segments", text = "Create")
+            sub.prop(self, "create_asymmetry_segments", text = "Create Asymmetry Segments")
             row = sub.row()
             row.prop(self, "num_asymmetry_segments_min", text = "Min")
             row.prop(self, "num_asymmetry_segments_max", text = "Max")
@@ -140,8 +139,13 @@ class GenerateSpaceship(bpy.types.Operator) :
         row.prop(self, "allow_horizontal_symmetry", text = "Horizontal")
         row.prop(self, "allow_vertical_symmetry", text = "Vertical")
         main.prop(self, "add_bevel_modifier", text = "Add Bevel Modifier")
-        main.prop(self, "assign_materials", text = "Assign Materials")
-        main.prop(self, "grunge_factor", text = "Material Grunge")
+        if self.create_materials :
+            sub = main.box()
+            sub.prop(self, "create_materials", text = "Create Materials")
+            sub.prop(self, "grunge_factor", text = "Grunge")
+        else :
+            main.prop(self, "create_materials", text = "Create Materials")
+        #end if
     #end draw
 
     def invoke(self, context, event) :

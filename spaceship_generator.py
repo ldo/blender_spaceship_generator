@@ -436,7 +436,7 @@ class parms_defaults :
     allow_horizontal_symmetry = True
     allow_vertical_symmetry = False
     add_bevel_modifier = True
-    assign_materials = True
+    create_materials = True
     grunge_factor = 0.5
 #end parms_defaults
 
@@ -1108,14 +1108,20 @@ def generate_spaceship(parms) :
     if parms.mat_ranseed != "" :
         mat_random.seed(parms.mat_ranseed)
     #end if
-    materials = create_materials(parms, mat_random)
-    for mat in materials :
-        if parms.assign_materials :
+    if parms.create_materials :
+        materials = create_materials(parms, mat_random)
+        for mat in materials :
             me.materials.append(mat)
-        else :
-            me.materials.append(bpy.data.materials.new(name = "Material"))
+        #end for
+    else :
+        mat = bpy.data.materials.get("Material")
+        if mat == None :
+            mat = bpy.data.materials.new(name = "Material")
         #end if
-    #end for
+        for i in range(len(MATERIAL.__members__)) :
+            me.materials.append(mat)
+        #end for
+    #end if
 
     return obj
 #end generate_spaceship
