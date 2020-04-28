@@ -43,7 +43,7 @@ basename = "add_mesh_SpaceshipGenerator"
 outfilename = "%s%s.zip" % (basename, (lambda : "", lambda : "-" + upto)[upto != None]())
 out = zipfile.ZipFile(outfilename, "x")
 if upto != None :
-    log_range = (earliest, upto)
+    log_range = ("%s..%s" % (earliest, upto),)
 else :
     log_range = ()
 #end if
