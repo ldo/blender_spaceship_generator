@@ -39,7 +39,7 @@ upto = args[0]
 earliest = git("rev-list", "--reverse", upto).split(b"\n")[0].strip().decode()
 
 basename = "add_mesh_SpaceshipGenerator"
-outfilename = "%s%s.zip" % (basename, (lambda : "", lambda : "-" + upto)[upto != None]())
+outfilename = "%s-%s.zip" % (basename, upto)
 out = zipfile.ZipFile(outfilename, "x")
 for filename in \
     (
