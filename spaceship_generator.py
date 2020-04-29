@@ -17,8 +17,7 @@ from mathutils import \
     Vector
 from random import \
     Random
-from enum import \
-    IntEnum
+import enum
 from colorsys import \
     hls_to_rgb
 
@@ -215,7 +214,7 @@ def is_rear_face(face) :
     return face.normal.x < -0.95
 #end is_rear_face
 
-class MATERIAL(IntEnum) :
+class MATERIAL(enum.IntEnum) :
     "names for material slot indices. Must be densely-assigned from 0."
     HULL = 0            # Plain spaceship hull
     HULL_LIGHTS = 1     # Spaceship hull with emissive windows
@@ -447,9 +446,25 @@ def create_materials(parms) :
     return materials
 #end create_materials
 
+class ALIGN_TO(enum.Enum) :
+    "Aligning the orientation of a newly-created spaceship."
+    NONE = "nothing"
+    WORLD = "world"
+    VIEW = "view"
+    CURSOR = "cursor"
+
+    @property
+    def idstr(self) :
+        return \
+            self.value
+    #end idstr
+
+#end ALIGN_TO
+
 class parms_defaults :
     "define parameter defaults in a single place for reuse."
     geom_ranseed = ""
+    align = ALIGN_TO.NONE.idstr
     mat_ranseed = ""
     num_hull_segments_min = 3
     num_hull_segments_max = 6
@@ -1126,20 +1141,32 @@ def generate_spaceship(parms) :
 
     # Add the mesh to the scene
     obj = bpy.data.objects.new(me.name, me)
+    if parms.align == ALIGN_TO.WORLD.idstr :
+        orient = Matrix.Identity(4)
+    elif parms.align == ALIGN_TO.VIEW.idstr :
+        orient = bpy.context.region_data.view_matrix.inverted().decompose()[1].to_matrix()
+          # rotation part only
+        orient.resize_4x4()
+    elif parms.align == ALIGN_TO.CURSOR.idstr :
+        orient = bpy.context.scene.cursor.matrix.copy()
+    else : # assume ALIGN_TO.NONE
+        orient = Matrix.Identity(4)
+    #end if
+    if parms.align in (ALIGN_TO.VIEW.idstr, ALIGN_TO.CURSOR.idstr) :
+        orient = orient @ Matrix.Rotation(-90 * deg, 4, Vector((1, 0, 0)))
+    #end if
+    if parms.align != ALIGN_TO.NONE.idstr :
+        orient = orient @ Matrix.Rotation(-90 * deg, 4, Vector((0, 0, 1)))
+    #end if
+    if parms.align != ALIGN_TO.CURSOR.idstr :
+        orient = Matrix.Translation(bpy.context.scene.cursor.location) @ orient
+    #end if
+    obj.matrix_basis = orient
     bpy.context.scene.collection.objects.link(obj)
-    # Select and make active
-    bpy.ops.object.select_all(action = "DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-
-    # Recenter the object to its center of mass
-    bpy.ops.object.origin_set(type = "ORIGIN_CENTER_OF_MASS")
-    ob = bpy.context.object
-    ob.location = bpy.context.scene.cursor.location.copy()
 
     if parms.add_bevel_modifier :
         # Add a fairly broad bevel modifier to angularize shape
-        bevel_modifier = ob.modifiers.new("Bevel", "BEVEL")
+        bevel_modifier = obj.modifiers.new("Bevel", "BEVEL")
         bevel_modifier.width = geom_random.uniform(5, 20)
         bevel_modifier.offset_type = "PERCENT"
         bevel_modifier.segments = 2
@@ -1149,7 +1176,7 @@ def generate_spaceship(parms) :
     #end if
 
     # Add materials to the spaceship
-    me = ob.data
+    me = obj.data
     if parms.create_materials :
         materials = create_materials(parms)
         for mat in materials :
@@ -1164,6 +1191,13 @@ def generate_spaceship(parms) :
             me.materials.append(mat)
         #end for
     #end if
+
+    # Select and make active
+    bpy.ops.object.select_all(action = "DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    # Recenter the object to its center of mass
+    bpy.ops.object.origin_set(type = "ORIGIN_CENTER_OF_MASS")
 
     return obj
 #end generate_spaceship

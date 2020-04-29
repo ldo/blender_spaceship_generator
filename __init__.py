@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 5, 2),
+        "version" : (1, 5, 3),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -22,12 +22,7 @@ else :
 import random
 import bpy
 import bpy.utils.previews
-from bpy.props import \
-    BoolProperty, \
-    FloatProperty, \
-    FloatVectorProperty, \
-    IntProperty, \
-    StringProperty
+import bpy.props
 
 class GenerateSpaceship(bpy.types.Operator) :
     "Procedurally generate 3D spaceships from a random seed."
@@ -36,106 +31,120 @@ class GenerateSpaceship(bpy.types.Operator) :
     bl_options = {"REGISTER", "UNDO"}
 
     df = spaceship_generator.parms_defaults # temp short name
-    geom_ranseed : StringProperty \
+    ALIGN_TO = spaceship_generator.ALIGN_TO
+    geom_ranseed : bpy.props.StringProperty \
       (
         default = df.geom_ranseed,
         name = "Geometry Seed"
       )
-    num_hull_segments_min : IntProperty \
+    align : bpy.props.EnumProperty \
+      (
+        default = df.align,
+        items =
+            (
+                (ALIGN_TO.NONE.idstr, "Nothing", "leave as created"),
+                (ALIGN_TO.WORLD.idstr, "World", "align forward to negative-y direction"),
+                (ALIGN_TO.VIEW.idstr, "View", "align forward to view"),
+                (ALIGN_TO.CURSOR.idstr, "3D Cursor", "take rotation from 3D cursor"),
+            ),
+        name = "Align"
+      )
+    num_hull_segments_min : bpy.props.IntProperty \
       (
         default = df.num_hull_segments_min,
         min = 0,
         soft_max = 16,
         name = "Min. Hull Segments"
       )
-    num_hull_segments_max : IntProperty \
+    num_hull_segments_max : bpy.props.IntProperty \
       (
         default = df.num_hull_segments_max,
         min = 0,
         soft_max = 16,
         name = "Max. Hull Segments"
       )
-    create_asymmetry_segments : BoolProperty \
+    create_asymmetry_segments : bpy.props.BoolProperty \
       (
         default = df.create_asymmetry_segments,
         name = "Create Asymmetry Segments"
       )
-    num_asymmetry_segments_min : IntProperty \
+    num_asymmetry_segments_min : bpy.props.IntProperty \
       (
         default = df.num_asymmetry_segments_min,
         min = 1,
         soft_max = 16,
         name = "Min. Asymmetry Segments"
       )
-    num_asymmetry_segments_max : IntProperty \
+    num_asymmetry_segments_max : bpy.props.IntProperty \
       (
         default = df.num_asymmetry_segments_max,
         min = 1,
         soft_max = 16,
         name = "Max. Asymmetry Segments"
       )
-    create_face_detail : BoolProperty \
+    create_face_detail : bpy.props.BoolProperty \
       (
         default = df.create_face_detail,
         name = "Create Face Detail"
       )
-    allow_horizontal_symmetry : BoolProperty \
+    allow_horizontal_symmetry : bpy.props.BoolProperty \
       (
         default = df.allow_horizontal_symmetry,
         name = "Allow Horizontal Symmetry"
       )
-    allow_vertical_symmetry : BoolProperty \
+    allow_vertical_symmetry : bpy.props.BoolProperty \
       (
         default = df.allow_vertical_symmetry,
         name = "Allow Vertical Symmetry"
       )
-    add_bevel_modifier : BoolProperty \
+    add_bevel_modifier : bpy.props.BoolProperty \
       (
         default = df.add_bevel_modifier,
         name = "Add Bevel Modifier"
       )
-    create_materials : BoolProperty \
+    create_materials : bpy.props.BoolProperty \
       (
         default = df.create_materials,
         name = "Assign Materials"
       )
-    hull_base_color : FloatVectorProperty \
+    hull_base_color : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
         default = df.hull_base_color,
         name = "Hull Base Color"
       )
-    hull_darken : FloatProperty \
+    hull_darken : bpy.props.FloatProperty \
       (
         default = df.hull_darken,
         min = 0,
         max = 1,
         name = "Hull Darken Factor"
       )
-    hull_emissive_color : FloatVectorProperty \
+    hull_emissive_color : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
         default = df.hull_emissive_color,
         name = "Window Emissive Color"
       )
-    glow_color : FloatVectorProperty \
+    glow_color : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
         default = df.glow_color,
         name = "Engine/Disc Glow Color"
       )
-    grunge_factor : FloatProperty \
+    grunge_factor : bpy.props.FloatProperty \
       (
         default = df.grunge_factor,
         min = 0,
         max = 1,
         name = "Material Grunge"
       )
-    del df
+    del df, ALIGN_TO
 
     def draw(self, context) :
         main = self.layout
-        main.prop(self, "geom_ranseed", text = "Geometry Seed")
+        main.prop(self, "geom_ranseed", text = "Seed")
+        main.prop(self, "align", text = "Align To")
         sub = main.box()
         sub.label(text = "Hull Segments")
         row = sub.row()
