@@ -49,11 +49,17 @@ def load_image(filename, use_alpha, is_color) :
 class NodeContext :
     "convenience class for assembling a nicely-laid-out node graph."
 
-    def __init__(self, graph, location) :
+    def __init__(self, graph, location, clear = False) :
         "“graph” is the node tree for which to manage the addition of nodes." \
-        " “location” is the initial location at which to start placing new nodes."
+        " “location” is the initial location at which to start placing new nodes." \
+        " clear indicates whether to get rid of any existing nodes or not."
         self.graph = graph
         self._location = [location[0], location[1]]
+        if clear :
+            for node in self.graph.nodes :
+                self.graph.nodes.remove(node)
+            #end for
+        #end if
     #end __init__
 
     def step_across(self, width) :
@@ -243,6 +249,39 @@ def create_materials(parms, mat_random) :
 
     tex_coords_common = define_tex_coords_common()
 
+    def define_hull_color_common() :
+        # creates a node group that applies the grunge factor to
+        # an input colour to produce an output colour.
+        hull_common = bpy.data.node_groups.new("SpaceShip.HullColorCommon", "ShaderNodeTree")
+        ctx = NodeContext(hull_common, (-400, 0))
+        save_pos = ctx.pos
+        group_input = ctx.node("NodeGroupInput", ctx.step_down(200))
+        hull_common.inputs.new("NodeSocketColor", "Color")
+        hull_common.inputs.new("NodeSocketFloat", "Grunge")
+        hull_common.inputs[1].default_value = parms.grunge_factor
+        dirty = ctx.node("ShaderNodeTexNoise", ctx.step_across(200))
+        dirty.inputs["Scale"].default_value = 20
+        dirtier = ctx.node("ShaderNodeBrightContrast", ctx.step_across(200))
+        ctx.link(dirty.outputs[0], dirtier.inputs[0])
+        dirtier.inputs[2].default_value = 2
+        ctx.pos = (ctx.pos[0], save_pos[1])
+        mix = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
+        mix.blend_type = "MULTIPLY"
+        ctx.link(group_input.outputs[1], mix.inputs[0])
+        ctx.link(group_input.outputs[0], mix.inputs[1])
+        ctx.link(dirtier.outputs[0], mix.inputs[2])
+        group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
+        hull_common.outputs.new("NodeSocketColor", "Color")
+        ctx.link(mix.outputs[0], group_output.inputs[0])
+        group_input.outputs[0].name = hull_common.inputs[0].name
+        group_input.outputs[1].name = hull_common.inputs[1].name
+        group_output.inputs[0].name = hull_common.outputs[0].name
+        deselect_all(hull_common)
+        return hull_common
+    #end define_hull_color_common
+
+    hull_color_common = define_hull_color_common()
+
     def create_texture(ctx, filename, use_alpha, is_color) :
         # Creates an image texture node given filename relative to my
         # “textures” subdirectory. Returns the output terminal to be linked
@@ -261,11 +300,7 @@ def create_materials(parms, mat_random) :
         # defines a node group for the normal-mapping texture to be used
         # across different hull materials.
         normals_common = bpy.data.node_groups.new("SpaceShip.NormalsCommon", "ShaderNodeTree")
-        ctx = NodeContext(normals_common, (-500, 0))
-        group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
-        normals_common.inputs.new("NodeSocketFloat", "Grunge")
-        normals_common.inputs[0].default_value = parms.grunge_factor
-        save1_pos = ctx.pos
+        ctx = NodeContext(normals_common, (-300, 0))
         tex_out = create_texture \
           (
             ctx,
@@ -273,26 +308,13 @@ def create_materials(parms, mat_random) :
             use_alpha = True,
             is_color = False
           )
-        save2_pos = ctx.pos
-        ctx.pos = (save1_pos[0], ctx.pos[1])
-        ctx.step_down(400)
-        dirty = ctx.node("ShaderNodeTexNoise", ctx.step_across(200))
-        dirty.inputs["Scale"].default_value = 10
-        ctx.pos = save2_pos
-        mix = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
-        mix.blend_type = "MIX"
-        #mix.inputs[0].default_value = 0.5
-        ctx.link(group_input.outputs[0], mix.inputs[0])
-        ctx.link(tex_out, mix.inputs[1])
-        ctx.link(dirty.outputs[1], mix.inputs[2])
         normal_map = ctx.node("ShaderNodeNormalMap", ctx.step_across(200))
-        ctx.link(mix.outputs[0], normal_map.inputs["Color"])
+        ctx.link(tex_out, normal_map.inputs["Color"])
         normal_map.inputs["Strength"].default_value = 1
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         normals_common.outputs.new("NodeSocketVector", "Normal")
           # work around intermittent crash on following line
         ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
-        group_input.outputs[0].name = normals_common.inputs[0].name
         group_output.inputs[0].name = normals_common.outputs[0].name
         deselect_all(normals_common)
         return normals_common
@@ -302,19 +324,34 @@ def create_materials(parms, mat_random) :
 
     def set_hull_mat_basics(mat, base_color) :
         # Sets some basic properties for a hull material.
-        main_shader = find_main_shader(mat)
-        ctx = NodeContext(mat.node_tree, tuple(main_shader.location))
-        ctx.step_across(-300)
+        ctx = NodeContext(mat.node_tree, (-450, 0), clear = True)
         save_pos = ctx.pos
-        ctx.step_down(200)
-        main_shader.inputs["Base Color"].default_value = base_color
-        main_shader.inputs["Specular"].default_value = 0.1
+        color_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
+        color_mix.node_tree = hull_color_common
+        color_mix.inputs["Color"].default_value = base_color
         normal_map = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         normal_map.node_tree = normals_common
-        ctx.link(normal_map.outputs[0], main_shader.inputs["Normal"])
-        ctx.pos = save_pos
+        ctx.pos = (ctx.pos[0], save_pos[1])
+        save_pos = ctx.pos
+        ctx.step_down(200)
+        normals_fanout = ctx.node("NodeReroute", ctx.step_across(100))
+        ctx.link(normal_map.outputs[0], normals_fanout.inputs[0])
+        ctx.pos = (ctx.pos[0], save_pos[1])
+        save_pos = ctx.pos
+        color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_down(200))
+        ctx.link(color_mix.outputs[0], color_shader.inputs["Color"])
+        ctx.link(normals_fanout.outputs[0], color_shader.inputs["Normal"])
+        shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
+        shiny.inputs["Roughness"].default_value = 0.5
+        ctx.link(normals_fanout.outputs[0], shiny.inputs["Normal"])
+        ctx.pos = (ctx.pos[0], save_pos[1])
+        mix_shader = ctx.node("ShaderNodeMixShader", ctx.step_across(200))
+        mix_shader.inputs[0].default_value = 0.1
+        ctx.link(color_shader.outputs[0], mix_shader.inputs[1])
+        ctx.link(shiny.outputs[0], mix_shader.inputs[2])
+        material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+        ctx.link(mix_shader.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
-        return ctx, main_shader # for adding further nodes if needed
     #end set_hull_mat_basics
 
     def set_hull_mat_emissive(mat, color, strength) :
@@ -349,11 +386,7 @@ def create_materials(parms, mat_random) :
     # Build the hull texture
     set_hull_mat_basics(materials[MATERIAL.HULL], hull_base_color)
 
-    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0))
-    for node in ctx.graph.nodes :
-      # clear out default nodes
-        ctx.graph.nodes.remove(node)
-    #end for
+    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0), clear = True)
     normal_map = ctx.node("ShaderNodeGroup", ctx.step_down(200))
     normal_map.node_tree = normals_common
     save_pos = ctx.pos
