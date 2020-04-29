@@ -418,8 +418,11 @@ def create_materials(parms, mat_random) :
     mixer2.inputs[0].default_value = 1.0
     ctx.link(mixer1.outputs[0], mixer2.inputs[1])
     mixer2.inputs[2].default_value = hull_base_color
+    color_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+    color_mix.node_tree = hull_color_common
+    ctx.link(mixer2.outputs[0], color_mix.inputs[0])
     color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
-    ctx.link(mixer2.outputs[0], color_shader.inputs["Color"])
+    ctx.link(color_mix.outputs[0], color_shader.inputs["Color"])
     ctx.link(normal_map.outputs[0], color_shader.inputs["Normal"])
     add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
     ctx.link(color_shader.outputs[0], add_shader.inputs[0])
