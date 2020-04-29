@@ -107,6 +107,19 @@ def find_main_shader(mat) :
     return mat.node_tree.nodes["Principled BSDF"]
 #end find_main_shader
 
+def scale_face(bm, face, scale_x, scale_y, scale_z) :
+    # Scales a face in local face space. Ace!
+    face_space = get_face_matrix(face)
+    face_space.invert()
+    bmesh.ops.scale \
+      (
+        bm,
+        vec = Vector((scale_x, scale_y, scale_z)),
+        space = face_space,
+        verts = face.verts
+      )
+#end scale_face
+
 def extrude_face(bm, face, translate_forwards = 0.0, extruded_face_list = None) :
     # Extrudes a face along its normal by translate_forwards units.
     # Returns the new face, and optionally fills out extruded_face_list
@@ -173,19 +186,6 @@ def get_face_matrix(face, pos = None) :
     mat[3][3] = 1
     return mat
 #end get_face_matrix
-
-def scale_face(bm, face, scale_x, scale_y, scale_z) :
-    # Scales a face in local face space. Ace!
-    face_space = get_face_matrix(face)
-    face_space.invert()
-    bmesh.ops.scale \
-      (
-        bm,
-        vec = Vector((scale_x, scale_y, scale_z)),
-        space = face_space,
-        verts = face.verts
-      )
-#end scale_face
 
 def get_face_width_and_height(face) :
     # Returns the rough length and width of a quad face.
