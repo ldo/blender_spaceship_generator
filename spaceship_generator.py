@@ -365,12 +365,11 @@ def create_materials(parms, mat_random) :
         use_alpha = True,
         is_color = True
       )
-    mixer = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
-    mixer.blend_type = "ADD"
-      # maybe “MULTIPLY” makes more sense, but then the unlit area looks darker than the hull
-    mixer.inputs[0].default_value = 1.0
-    ctx.link(base_window, mixer.inputs[1])
-    mixer.inputs[2].default_value = \
+    mixer1 = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer1.blend_type = "MULTIPLY"
+    mixer1.inputs[0].default_value = 1.0
+    ctx.link(base_window, mixer1.inputs[1])
+    mixer1.inputs[2].default_value = \
       (
             hls_to_rgb
               (
@@ -381,8 +380,13 @@ def create_materials(parms, mat_random) :
         +
             (1,)
       )
+    mixer2 = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
+    mixer2.blend_type = "ADD"
+    mixer2.inputs[0].default_value = 1.0
+    ctx.link(mixer1.outputs[0], mixer2.inputs[1])
+    mixer2.inputs[2].default_value = hull_base_color
     color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
-    ctx.link(mixer.outputs[0], color_shader.inputs["Color"])
+    ctx.link(mixer2.outputs[0], color_shader.inputs["Color"])
     ctx.link(normal_map.outputs[0], color_shader.inputs["Normal"])
     add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
     ctx.link(color_shader.outputs[0], add_shader.inputs[0])
