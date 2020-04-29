@@ -220,8 +220,9 @@ class MATERIAL(IntEnum) :
     HULL = 0            # Plain spaceship hull
     HULL_LIGHTS = 1     # Spaceship hull with emissive windows
     HULL_DARK = 2       # Plain Spaceship hull, darkened
-    EXHAUST_BURN = 3    # Emissive engine burn material
-    GLOW_DISC = 4       # Emissive landing pad disc material
+    HULL_METALLIC = 3   # Metallic parts (antennas)
+    EXHAUST_BURN = 4    # Emissive engine burn material
+    GLOW_DISC = 5       # Emissive landing pad disc material
 #end MATERIAL
 
 def create_materials(parms) :
@@ -425,6 +426,17 @@ def create_materials(parms) :
         materials[MATERIAL.HULL_DARK],
         tuple(parms.hull_darken * x for x in parms.hull_base_color[:3])
       )
+
+    # build the metallic material
+    ctx = NodeContext(materials[MATERIAL.HULL_METALLIC].node_tree, (-200, 0), clear = True)
+    color_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+    color_mix.node_tree = hull_color_common
+    color_mix.inputs["Color"].default_value = hls_to_rgb(h = 0.091, l = 0.9, s = 0.1) + (1,)
+    shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
+    ctx.link(color_mix.outputs[0], shiny.inputs["Color"])
+    shiny.inputs["Roughness"].default_value = 0.4
+    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+    ctx.link(shiny.outputs[0], material_output.inputs[0])
 
     # Build the exhaust_burn texture
     set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], parms.glow_color, 1.0)
@@ -798,7 +810,7 @@ def generate_spaceship(parms) :
                     depth = geom_random.uniform(0.1, 1.5) * face_size
                     depth_short = depth * geom_random.uniform(0.02, 0.15)
                     base_diameter = geom_random.uniform(0.005, 0.05)
-                    material_index = (MATERIAL.HULL_DARK, MATERIAL.HULL)[geom_random.random() > 0.5]
+                    material_index = MATERIAL.HULL_METALLIC
 
                     # Spire
                     num_segments = geom_random.uniform(3, 6)
