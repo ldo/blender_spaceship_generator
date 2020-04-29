@@ -107,12 +107,6 @@ def deselect_all(material_tree) :
     #end for
 #end deselect_all
 
-def find_main_shader(mat) :
-    # returns the main (only) shader node that is created
-    # as part of a default material setup.
-    return mat.node_tree.nodes["Principled BSDF"]
-#end find_main_shader
-
 def scale_face(bm, face, scale_x, scale_y, scale_z) :
     # Scales a face in local face space. Ace!
     face_space = get_face_matrix(face)
@@ -356,8 +350,12 @@ def create_materials(parms) :
 
     def set_hull_mat_emissive(mat, color, strength) :
         # does common setup for very basic emissive hull materials (engines, landing discs)
-        main_shader = find_main_shader(mat)
-        main_shader.inputs["Emission"].default_value = tuple(c * strength for c in color[:3]) + (1,)
+        ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
+        emit = ctx.node("ShaderNodeEmission", ctx.step_across(200))
+        emit.inputs["Color"].default_value = tuple(color) + (1,)
+        emit.inputs["Strength"].default_value = strength
+        material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+        ctx.link(emit.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
     #end set_hull_mat_emissive
 
