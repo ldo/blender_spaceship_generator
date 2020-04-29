@@ -230,7 +230,7 @@ class MATERIAL(IntEnum) :
     GLOW_DISC = 4       # Emissive landing pad disc material
 #end MATERIAL
 
-def create_materials(parms, mat_random) :
+def create_materials(parms) :
     # Creates all our materials and returns them as a list.
 
     def define_tex_coords_common() :
@@ -328,7 +328,7 @@ def create_materials(parms, mat_random) :
         save_pos = ctx.pos
         color_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
         color_mix.node_tree = hull_color_common
-        color_mix.inputs["Color"].default_value = base_color
+        color_mix.inputs["Color"].default_value = tuple(base_color) + (1,)
         normal_map = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         normal_map.node_tree = normals_common
         ctx.pos = (ctx.pos[0], save_pos[1])
@@ -357,7 +357,7 @@ def create_materials(parms, mat_random) :
     def set_hull_mat_emissive(mat, color, strength) :
         # does common setup for very basic emissive hull materials (engines, landing discs)
         main_shader = find_main_shader(mat)
-        main_shader.inputs["Emission"].default_value = tuple(c * strength for c in color)
+        main_shader.inputs["Emission"].default_value = tuple(c * strength for c in color[:3]) + (1,)
         deselect_all(mat.node_tree)
     #end set_hull_mat_emissive
 
@@ -370,21 +370,8 @@ def create_materials(parms, mat_random) :
         materials.append(mat)
     #end for
 
-    # Choose a base color for the spaceship hull
-    hull_base_color = \
-      (
-            hls_to_rgb
-              (
-                h = mat_random.random(),
-                l = mat_random.uniform(0.05, 0.5),
-                s = mat_random.uniform(0, 0.25)
-              )
-        +
-            (1,)
-      )
-
     # Build the hull texture
-    set_hull_mat_basics(materials[MATERIAL.HULL], hull_base_color)
+    set_hull_mat_basics(materials[MATERIAL.HULL], parms.hull_base_color)
 
     ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0), clear = True)
     normal_map = ctx.node("ShaderNodeGroup", ctx.step_down(200))
@@ -402,22 +389,12 @@ def create_materials(parms, mat_random) :
     mixer1.blend_type = "MULTIPLY"
     mixer1.inputs[0].default_value = 1.0
     ctx.link(base_window, mixer1.inputs[1])
-    mixer1.inputs[2].default_value = \
-      (
-            hls_to_rgb
-              (
-                h = mat_random.random(),
-                l = mat_random.uniform(0.5, 1),
-                s = mat_random.uniform(0, 0.5)
-              )
-        +
-            (1,)
-      )
+    mixer1.inputs[2].default_value = tuple(parms.hull_emissive_color) + (1,)
     mixer2 = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
     mixer2.blend_type = "ADD"
     mixer2.inputs[0].default_value = 1.0
     ctx.link(mixer1.outputs[0], mixer2.inputs[1])
-    mixer2.inputs[2].default_value = hull_base_color
+    mixer2.inputs[2].default_value = tuple(parms.hull_base_color) + (1,)
     color_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
     color_mix.node_tree = hull_color_common
     ctx.link(mixer2.outputs[0], color_mix.inputs[0])
@@ -448,17 +425,14 @@ def create_materials(parms, mat_random) :
     set_hull_mat_basics \
       (
         materials[MATERIAL.HULL_DARK],
-        tuple(0.3 * x for x in hull_base_color[:3]) + (1,)
+        tuple(parms.hull_darken * x for x in parms.hull_base_color[:3])
       )
 
-    # Choose a glow color for the exhaust + glow discs
-    glow_color = hls_to_rgb(h = mat_random.random(), l = mat_random.uniform(0.5, 1), s = 1) + (1,)
-
     # Build the exhaust_burn texture
-    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], glow_color, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], parms.glow_color, 1.0)
 
     # Build the glow_disc texture
-    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], glow_color, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], parms.glow_color, 1.0)
 
     return materials
 #end create_materials
@@ -477,8 +451,30 @@ class parms_defaults :
     allow_vertical_symmetry = False
     add_bevel_modifier = True
     create_materials = True
+    hull_base_color = (0.5, 0.5, 0.5)
+    hull_darken = 0.3
+    hull_emissive_color = (0.75, 0.75, 0.75)
+    glow_color = (1, 1, 1)
     grunge_factor = 0.5
 #end parms_defaults
+
+def randomize_colors(parms, mat_random) :
+    # Choose a base color for the spaceship hull
+    parms.hull_base_color = hls_to_rgb \
+      (
+        h = mat_random.random(),
+        l = mat_random.uniform(0.05, 0.5),
+        s = mat_random.uniform(0, 0.25)
+      )
+    parms.hull_emissive_color = hls_to_rgb \
+      (
+        h = mat_random.random(),
+        l = mat_random.uniform(0.5, 1),
+        s = mat_random.uniform(0, 0.5)
+      )
+    # Choose a glow color for the exhaust + glow discs
+    parms.glow_color = hls_to_rgb(h = mat_random.random(), l = mat_random.uniform(0.5, 1), s = 1)
+#end randomize_colors
 
 def generate_spaceship(parms) :
     # Generates a textured spaceship mesh and returns the object.
@@ -1144,12 +1140,8 @@ def generate_spaceship(parms) :
 
     # Add materials to the spaceship
     me = ob.data
-    mat_random = Random()
-    if parms.mat_ranseed != "" :
-        mat_random.seed(parms.mat_ranseed)
-    #end if
     if parms.create_materials :
-        materials = create_materials(parms, mat_random)
+        materials = create_materials(parms)
         for mat in materials :
             me.materials.append(mat)
         #end for

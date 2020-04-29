@@ -2,7 +2,7 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 4, 6),
+        "version" : (1, 5, 0),
         "blender" : (2, 82, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
@@ -25,6 +25,7 @@ import bpy.utils.previews
 from bpy.props import \
     BoolProperty, \
     FloatProperty, \
+    FloatVectorProperty, \
     IntProperty, \
     StringProperty
 
@@ -39,11 +40,6 @@ class GenerateSpaceship(bpy.types.Operator) :
       (
         default = df.geom_ranseed,
         name = "Geometry Seed"
-      )
-    mat_ranseed : StringProperty \
-      (
-        default = df.mat_ranseed,
-        name = "Material Seed"
       )
     num_hull_segments_min : IntProperty \
       (
@@ -103,6 +99,31 @@ class GenerateSpaceship(bpy.types.Operator) :
         default = df.create_materials,
         name = "Assign Materials"
       )
+    hull_base_color : FloatVectorProperty \
+      (
+        subtype = "COLOR",
+        default = df.hull_base_color,
+        name = "Hull Base Color"
+      )
+    hull_darken : FloatProperty \
+      (
+        default = df.hull_darken,
+        min = 0,
+        max = 1,
+        name = "Hull Darken Factor"
+      )
+    hull_emissive_color : FloatVectorProperty \
+      (
+        subtype = "COLOR",
+        default = df.hull_emissive_color,
+        name = "Window Emissive Color"
+      )
+    glow_color : FloatVectorProperty \
+      (
+        subtype = "COLOR",
+        default = df.glow_color,
+        name = "Engine/Disc Glow Color"
+      )
     grunge_factor : FloatProperty \
       (
         default = df.grunge_factor,
@@ -114,10 +135,7 @@ class GenerateSpaceship(bpy.types.Operator) :
 
     def draw(self, context) :
         main = self.layout
-        sub = main.box()
-        sub.label(text = "Random Seeds")
-        sub.prop(self, "geom_ranseed", text = "Geometry")
-        sub.prop(self, "mat_ranseed", text = "Material")
+        main.prop(self, "geom_ranseed", text = "Geometry Seed")
         sub = main.box()
         sub.label(text = "Hull Segments")
         row = sub.row()
@@ -142,6 +160,10 @@ class GenerateSpaceship(bpy.types.Operator) :
         if self.create_materials :
             sub = main.box()
             sub.prop(self, "create_materials", text = "Create Materials")
+            sub.prop(self, "hull_base_color", text = "Hull Base")
+            sub.prop(self, "hull_darken", text = "Hull Darken")
+            sub.prop(self, "hull_emissive_color", text = "Hull Emissive")
+            sub.prop(self, "glow_color", text = "Engine/Disc Glow")
             sub.prop(self, "grunge_factor", text = "Grunge")
         else :
             main.prop(self, "create_materials", text = "Create Materials")
@@ -154,7 +176,7 @@ class GenerateSpaceship(bpy.types.Operator) :
           # default. Users can always replace seeds with
           # anything they like.
         self.geom_ranseed = str(random.randrange(maxseed))
-        self.mat_ranseed = str(random.randrange(maxseed))
+        spaceship_generator.randomize_colors(self, random.Random())
         spaceship_generator.generate_spaceship(self)
         return {"FINISHED"}
     #end invoke
