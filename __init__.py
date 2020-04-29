@@ -31,7 +31,7 @@ from bpy.props import \
 
 class GenerateSpaceship(bpy.types.Operator) :
     "Procedurally generate 3D spaceships from a random seed."
-    bl_idname = "mesh.generate_spaceship"
+    bl_idname = "add_mesh.generate_spaceship"
     bl_label = "Spaceship"
     bl_options = {"REGISTER", "UNDO"}
 
