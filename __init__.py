@@ -107,6 +107,11 @@ class GenerateSpaceship(bpy.types.Operator) :
         default = df.create_materials,
         name = "Assign Materials"
       )
+    show_materials_details : bpy.props.BoolProperty \
+      (
+        default = False,
+        name = "Show Materials Details"
+      )
     hull_base_color : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
@@ -168,14 +173,20 @@ class GenerateSpaceship(bpy.types.Operator) :
         main.prop(self, "add_bevel_modifier", text = "Add Bevel Modifier")
         if self.create_materials :
             sub = main.box()
-            sub.prop(self, "create_materials", text = "Create Materials")
-            sub.prop(self, "hull_base_color", text = "Hull Base")
-            sub.prop(self, "hull_darken", text = "Hull Darken")
-            sub.prop(self, "hull_emissive_color", text = "Hull Emissive")
-            sub.prop(self, "glow_color", text = "Engine/Disc Glow")
-            sub.prop(self, "grunge_factor", text = "Grunge")
+            row = sub.row()
+            row.prop(self, "create_materials", text = "Create Materials")
+            row.prop(self, "show_materials_details", text = "Show Details")
+            if self.show_materials_details :
+                sub.prop(self, "hull_base_color", text = "Hull Base")
+                sub.prop(self, "hull_darken", text = "Hull Darken")
+                sub.prop(self, "hull_emissive_color", text = "Hull Emissive")
+                sub.prop(self, "glow_color", text = "Engine/Disc Glow")
+                sub.prop(self, "grunge_factor", text = "Grunge")
+            #end if
         else :
-            main.prop(self, "create_materials", text = "Create Materials")
+            row = main.row()
+            row.prop(self, "create_materials", text = "Create Materials")
+            row.prop(self, "show_materials_details", text = "Show Details")
         #end if
     #end draw
 
