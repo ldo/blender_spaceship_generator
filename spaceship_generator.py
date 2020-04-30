@@ -379,6 +379,48 @@ def create_materials(parms) :
         deselect_all(mat.node_tree)
     #end set_hull_mat_basics
 
+    def setup_hull_lights(mat) :
+        ctx = NodeContext(mat.node_tree, (-600, 0), clear = True)
+        save1_pos = ctx.pos
+        base_output = hull_mat_common(ctx, parms.hull_base_color)
+        save2_pos = ctx.pos
+        ctx.pos = save1_pos
+        ctx.step_across(-450)
+        ctx.step_down(650)
+        # Add an emissive layer that lights up the windows
+        window_light = create_texture \
+          (
+            ctx,
+            filename = "hull_lights_emit.png",
+            use_alpha = False,
+            is_color = True
+          )
+        save1_pos = ctx.pos
+        ctx.step_down(300)
+        ctx.step_across(-200)
+        grunge_source = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        grunge_source.node_tree = hull_color_common
+        ctx.pos = (ctx.pos[0], save1_pos[1])
+        grunge_mix = ctx.node("ShaderNodeMath", ctx.step_across(200))
+        grunge_mix.operation = "MULTIPLY"
+        ctx.link(window_light, grunge_mix.inputs[0])
+        ctx.link(grunge_source.outputs[1], grunge_mix.inputs[1])
+        brighter = ctx.node("ShaderNodeMath", ctx.step_across(200))
+        brighter.operation = "MULTIPLY"
+        ctx.link(grunge_mix.outputs[0], brighter.inputs[0])
+        brighter.inputs[1].default_value = 2.0
+        light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
+        light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
+        ctx.link(brighter.outputs[0], light_shader.inputs["Strength"])
+        ctx.pos = save2_pos
+        add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
+        ctx.link(base_output, add_shader.inputs[0])
+        ctx.link(light_shader.outputs[0], add_shader.inputs[1])
+        material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+        ctx.link(add_shader.outputs[0], material_output.inputs[0])
+        deselect_all(ctx.graph)
+    #end setup_hull_lights
+
     def set_hull_mat_emissive(mat, color, strength) :
         # does common setup for very basic emissive hull materials (engines, landing discs)
         ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
@@ -402,45 +444,7 @@ def create_materials(parms) :
     # Build the hull texture
     set_hull_mat_basics(materials[MATERIAL.HULL], parms.hull_base_color)
 
-    ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0), clear = True)
-    save1_pos = ctx.pos
-    base_output = hull_mat_common(ctx, parms.hull_base_color)
-    save2_pos = ctx.pos
-    ctx.pos = save1_pos
-    ctx.step_across(-250)
-    ctx.step_down(450)
-    # Add an emissive layer that lights up the windows
-    window_light = create_texture \
-      (
-        ctx,
-        filename = "hull_lights_emit.png",
-        use_alpha = False,
-        is_color = True
-      )
-    save1_pos = ctx.pos
-    ctx.step_down(300)
-    ctx.step_across(-200)
-    grunge_source = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-    grunge_source.node_tree = hull_color_common
-    ctx.pos = (ctx.pos[0], save1_pos[1])
-    grunge_mix = ctx.node("ShaderNodeMath", ctx.step_across(200))
-    grunge_mix.operation = "MULTIPLY"
-    ctx.link(window_light, grunge_mix.inputs[0])
-    ctx.link(grunge_source.outputs[1], grunge_mix.inputs[1])
-    brighter = ctx.node("ShaderNodeMath", ctx.step_across(200))
-    brighter.operation = "MULTIPLY"
-    ctx.link(grunge_mix.outputs[0], brighter.inputs[0])
-    brighter.inputs[1].default_value = 2.0
-    light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
-    light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
-    ctx.link(brighter.outputs[0], light_shader.inputs["Strength"])
-    ctx.pos = save2_pos
-    add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
-    ctx.link(base_output, add_shader.inputs[0])
-    ctx.link(light_shader.outputs[0], add_shader.inputs[1])
-    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
-    ctx.link(add_shader.outputs[0], material_output.inputs[0])
-    deselect_all(ctx.graph)
+    setup_hull_lights(materials[MATERIAL.HULL_LIGHTS])
 
     # Build the hull_dark texture
     set_hull_mat_basics \
@@ -589,7 +593,7 @@ def generate_spaceship(parms) :
         scale = 0.8
         for face in result["geom"] :
             if isinstance(face, bmesh.types.BMFace) :
-                material_index = MATERIAL.HULL_LIGHTS if geom_random.random() > 0.5 else MATERIAL.HULL
+                material_index = (MATERIAL.HULL, MATERIAL.HULL_LIGHTS)[geom_random.random() > 0.5]
                 extruded_face_list = []
                 face = extrude_face(bm, face, grid_length, extruded_face_list)
                 for extruded_face in extruded_face_list :
