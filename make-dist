@@ -65,7 +65,7 @@ for filename in \
         item.date_time = time.gmtime(timestamp)[:6]
         out.writestr(item, object_contents)
     else :
-        pass # assume item was added after this commit
+        pass # assume item not present in this commit
     #end if
 #end for
 out.close()
