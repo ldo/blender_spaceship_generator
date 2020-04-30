@@ -359,12 +359,16 @@ def create_materials(parms) :
         color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_down(200))
         ctx.link(color_mix.outputs[0], color_shader.inputs["Color"])
         ctx.link(normals_fanout.outputs[0], color_shader.inputs["Normal"])
+        grunge_mix = ctx.node("ShaderNodeMath", ctx.step_down(200))
+        grunge_mix.operation = "MULTIPLY"
+        ctx.link(color_mix.outputs[1], grunge_mix.inputs[0])
+        grunge_mix.inputs[1].default_value = 0.1
         shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
         shiny.inputs["Roughness"].default_value = 0.5
         ctx.link(normals_fanout.outputs[0], shiny.inputs["Normal"])
         ctx.pos = (ctx.pos[0], save_pos[1])
         mix_shader = ctx.node("ShaderNodeMixShader", ctx.step_across(200))
-        mix_shader.inputs[0].default_value = 0.1
+        ctx.link(grunge_mix.outputs[0], mix_shader.inputs[0])
         ctx.link(color_shader.outputs[0], mix_shader.inputs[1])
         ctx.link(shiny.outputs[0], mix_shader.inputs[2])
         return mix_shader.outputs[0]
