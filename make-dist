@@ -51,12 +51,14 @@ for filename in \
         "icons/spaceship.png",
     ) \
 :
-    item = zipfile.ZipInfo.from_file(filename, "/".join((basename, filename)))
-    item.compress_type = zipfile.ZIP_DEFLATED
     info = \
         git("log", "--format=%ct:%H", "-n1", "%s..%s" % (earliest, upto), "--", filename) \
         .strip()
     if info != b"" :
+        item = zipfile.ZipInfo()
+        item.filename = "/".join((basename, filename))
+        item.external_attr = 0o100644 << 16
+        item.compress_type = zipfile.ZIP_DEFLATED
         timestamp, commit_hash = info.split(b":")
         timestamp = int(timestamp)
         info = git("ls-tree", commit_hash, filename).strip()
