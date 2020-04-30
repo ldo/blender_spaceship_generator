@@ -316,9 +316,8 @@ def create_materials(parms) :
 
     normals_common = define_normals_common()
 
-    def set_hull_mat_basics(mat, base_color) :
-        # Sets some basic properties for a hull material.
-        ctx = NodeContext(mat.node_tree, (-450, 0), clear = True)
+    def hull_mat_common(ctx, base_color) :
+        # common setup for various hull materials.
         save_pos = ctx.pos
         color_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
         color_mix.node_tree = hull_color_common
@@ -343,8 +342,15 @@ def create_materials(parms) :
         mix_shader.inputs[0].default_value = 0.1
         ctx.link(color_shader.outputs[0], mix_shader.inputs[1])
         ctx.link(shiny.outputs[0], mix_shader.inputs[2])
+        return mix_shader.outputs[0]
+    #end hull_mat_common
+
+    def set_hull_mat_basics(mat, base_color) :
+        # Sets some basic properties for a hull material.
+        ctx = NodeContext(mat.node_tree, (-450, 0), clear = True)
+        shader_output = hull_mat_common(ctx, base_color)
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
-        ctx.link(mix_shader.outputs[0], material_output.inputs[0])
+        ctx.link(shader_output, material_output.inputs[0])
         deselect_all(mat.node_tree)
     #end set_hull_mat_basics
 
@@ -372,39 +378,11 @@ def create_materials(parms) :
     set_hull_mat_basics(materials[MATERIAL.HULL], parms.hull_base_color)
 
     ctx = NodeContext(materials[MATERIAL.HULL_LIGHTS].node_tree, (-600, 0), clear = True)
-    normal_map = ctx.node("ShaderNodeGroup", ctx.step_down(200))
-    normal_map.node_tree = normals_common
-    save_pos = ctx.pos
-    # Add a diffuse layer that sets the window color
-    base_window = create_texture \
-      (
-        ctx,
-        filename = "hull_lights_diffuse.png",
-        use_alpha = True,
-        is_color = True
-      )
-    mixer1 = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
-    mixer1.blend_type = "MULTIPLY"
-    mixer1.inputs[0].default_value = 1.0
-    ctx.link(base_window, mixer1.inputs[1])
-    mixer1.inputs[2].default_value = tuple(parms.hull_emissive_color) + (1,)
-    mixer2 = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
-    mixer2.blend_type = "ADD"
-    mixer2.inputs[0].default_value = 1.0
-    ctx.link(mixer1.outputs[0], mixer2.inputs[1])
-    mixer2.inputs[2].default_value = tuple(parms.hull_base_color) + (1,)
-    color_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-    color_mix.node_tree = hull_color_common
-    ctx.link(mixer2.outputs[0], color_mix.inputs[0])
-    color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_across(200))
-    ctx.link(color_mix.outputs[0], color_shader.inputs["Color"])
-    ctx.link(normal_map.outputs[0], color_shader.inputs["Normal"])
-    add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
-    ctx.link(color_shader.outputs[0], add_shader.inputs[0])
-    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
-    ctx.link(add_shader.outputs[0], material_output.inputs[0])
-    ctx.pos = save_pos
-    ctx.step_down(300)
+    save1_pos = ctx.pos
+    base_output = hull_mat_common(ctx, parms.hull_base_color)
+    save2_pos = ctx.pos
+    ctx.pos = save1_pos
+    ctx.step_down(450)
     # Add an emissive layer that lights up the windows
     window_light = create_texture \
       (
@@ -416,7 +394,12 @@ def create_materials(parms) :
     light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
     ctx.link(window_light, light_shader.inputs["Color"])
     light_shader.inputs["Strength"].default_value = 2.0
+    ctx.pos = save2_pos
+    add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
+    ctx.link(base_output, add_shader.inputs[0])
     ctx.link(light_shader.outputs[0], add_shader.inputs[1])
+    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+    ctx.link(add_shader.outputs[0], material_output.inputs[0])
     deselect_all(ctx.graph)
 
     # Build the hull_dark texture
