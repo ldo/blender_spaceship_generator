@@ -249,27 +249,52 @@ def create_materials(parms) :
         hull_common = bpy.data.node_groups.new("SpaceShip.HullColorCommon", "ShaderNodeTree")
         ctx = NodeContext(hull_common, (-400, 0))
         save_pos = ctx.pos
-        group_input = ctx.node("NodeGroupInput", ctx.step_down(200))
+        group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
         hull_common.inputs.new("NodeSocketColor", "Color")
         hull_common.inputs.new("NodeSocketFloat", "Grunge")
+        ctx.step_down(100)
+        strength_fanout = ctx.node("NodeReroute", ctx.step_across(100))
+        ctx.link(group_input.outputs[1], strength_fanout.inputs[0])
+        ctx.pos = save_pos
+        ctx.step_down(200)
         hull_common.inputs[1].default_value = parms.grunge_factor
         dirty = ctx.node("ShaderNodeTexNoise", ctx.step_across(200))
         dirty.inputs["Scale"].default_value = 20
         dirtier = ctx.node("ShaderNodeBrightContrast", ctx.step_across(200))
         ctx.link(dirty.outputs[0], dirtier.inputs[0])
         dirtier.inputs[2].default_value = 2
+        grunge_fanout = ctx.node("NodeReroute", ctx.step_across(100))
+        ctx.link(dirtier.outputs[0], grunge_fanout.inputs[0])
         ctx.pos = (ctx.pos[0], save_pos[1])
-        mix = ctx.node("ShaderNodeMixRGB", ctx.step_across(200))
+        save_pos = ctx.pos
+        mix = ctx.node("ShaderNodeMixRGB", ctx.step_down(200))
         mix.blend_type = "MULTIPLY"
-        ctx.link(group_input.outputs[1], mix.inputs[0])
+        ctx.link(strength_fanout.outputs[0], mix.inputs[0])
         ctx.link(group_input.outputs[0], mix.inputs[1])
-        ctx.link(dirtier.outputs[0], mix.inputs[2])
+        ctx.link(grunge_fanout.outputs[0], mix.inputs[2])
+        invert1 = ctx.node("ShaderNodeMath", ctx.step_across(200))
+        invert1.operation = "SUBTRACT"
+        invert1.inputs[0].default_value = 1
+        ctx.link(grunge_fanout.outputs[0], invert1.inputs[1])
+        scalarize = ctx.node("ShaderNodeMath", ctx.step_across(200))
+        scalarize.operation = "MULTIPLY"
+        ctx.link(strength_fanout.outputs[0], scalarize.inputs[0])
+        ctx.link(invert1.outputs[0], scalarize.inputs[1])
+        scalarize.inputs[2].default_value = 1
+        invert2 = ctx.node("ShaderNodeMath", ctx.step_across(200))
+        invert2.operation = "SUBTRACT"
+        invert2.inputs[0].default_value = 1
+        ctx.link(scalarize.outputs[0], invert2.inputs[1])
+        ctx.pos = (ctx.pos[0], save_pos[1])
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         hull_common.outputs.new("NodeSocketColor", "Color")
         ctx.link(mix.outputs[0], group_output.inputs[0])
+        hull_common.outputs.new("NodeSocketFloat", "Grunge")
+        ctx.link(invert2.outputs[0], group_output.inputs[1])
         group_input.outputs[0].name = hull_common.inputs[0].name
         group_input.outputs[1].name = hull_common.inputs[1].name
         group_output.inputs[0].name = hull_common.outputs[0].name
+        group_output.inputs[1].name = hull_common.outputs[1].name
         deselect_all(hull_common)
         return hull_common
     #end define_hull_color_common
@@ -382,6 +407,7 @@ def create_materials(parms) :
     base_output = hull_mat_common(ctx, parms.hull_base_color)
     save2_pos = ctx.pos
     ctx.pos = save1_pos
+    ctx.step_across(-250)
     ctx.step_down(450)
     # Add an emissive layer that lights up the windows
     window_light = create_texture \
@@ -391,9 +417,19 @@ def create_materials(parms) :
         use_alpha = False,
         is_color = True
       )
+    save1_pos = ctx.pos
+    ctx.step_down(300)
+    ctx.step_across(-200)
+    grunge_source = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+    grunge_source.node_tree = hull_color_common
+    ctx.pos = (ctx.pos[0], save1_pos[1])
+    grunge_mix = ctx.node("ShaderNodeMath", ctx.step_across(200))
+    grunge_mix.operation = "MULTIPLY"
+    ctx.link(window_light, grunge_mix.inputs[0])
+    ctx.link(grunge_source.outputs[1], grunge_mix.inputs[1])
     brighter = ctx.node("ShaderNodeMath", ctx.step_across(200))
     brighter.operation = "MULTIPLY"
-    ctx.link(window_light, brighter.inputs[0])
+    ctx.link(grunge_mix.outputs[0], brighter.inputs[0])
     brighter.inputs[1].default_value = 2.0
     light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
     light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
