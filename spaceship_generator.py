@@ -391,9 +391,13 @@ def create_materials(parms) :
         use_alpha = False,
         is_color = True
       )
+    brighter = ctx.node("ShaderNodeMath", ctx.step_across(200))
+    brighter.operation = "MULTIPLY"
+    ctx.link(window_light, brighter.inputs[0])
+    brighter.inputs[1].default_value = 2.0
     light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
-    ctx.link(window_light, light_shader.inputs["Color"])
-    light_shader.inputs["Strength"].default_value = 2.0
+    light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
+    ctx.link(brighter.outputs[0], light_shader.inputs["Strength"])
     ctx.pos = save2_pos
     add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
     ctx.link(base_output, add_shader.inputs[0])
