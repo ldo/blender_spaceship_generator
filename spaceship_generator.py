@@ -235,9 +235,9 @@ def create_materials(parms) :
         tex_coords = ctx.node("ShaderNodeTexCoord", ctx.step_across(200))
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         tex_coords_common.outputs.new("NodeSocketVector", "Coords")
-          # work around intermittent crash on following line
         ctx.link(tex_coords.outputs["Generated"], group_output.inputs[0])
         group_output.inputs[0].name = tex_coords_common.outputs[0].name
+        deselect_all(tex_coords_common)
         return tex_coords_common
     #end define_tex_coords_common
 
@@ -332,7 +332,6 @@ def create_materials(parms) :
         normal_map.inputs["Strength"].default_value = 1
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         normals_common.outputs.new("NodeSocketVector", "Normal")
-          # work around intermittent crash on following line
         ctx.link(normal_map.outputs["Normal"], group_output.inputs[0])
         group_output.inputs[0].name = normals_common.outputs[0].name
         deselect_all(normals_common)
@@ -378,6 +377,7 @@ def create_materials(parms) :
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         hull_mat_common.outputs.new("NodeSocketShader", "Shader")
         ctx.link(mix_shader.outputs[0], group_output.inputs[0])
+        deselect_all(hull_mat_common)
         return hull_mat_common
     #end define_hull_mat_common
 
