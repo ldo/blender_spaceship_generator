@@ -29,12 +29,12 @@ def resource_path(*path_components) :
     return os.path.join(DIR, *path_components)
 #end resource_path
 
-def load_image(filename, use_alpha, is_color) :
+def load_image(filename, use_alpha, is_colour) :
     name = os.path.splitext(filename)[0]
     filepath = resource_path("textures", filename)
     image = bpy.data.images.load(filepath)
     image.alpha_mode = ("NONE", "STRAIGHT")[use_alpha]
-    image.colorspace_settings.name = ("Non-Color", "sRGB")[is_color]
+    image.colorspace_settings.name = ("Non-Color", "sRGB")[is_colour]
     image.pack()
     # wipe all traces of original addon file path
     image.filepath = "//textures/%s" % filename
@@ -243,14 +243,14 @@ def create_materials(parms) :
 
     tex_coords_common = define_tex_coords_common()
 
-    def define_hull_color_common() :
+    def define_hull_colour_common() :
         # creates a node group that applies the grunge factor to
         # an input colour to produce an output colour.
-        hull_common = bpy.data.node_groups.new("SpaceShip.HullColorCommon", "ShaderNodeTree")
+        hull_common = bpy.data.node_groups.new("SpaceShip.HullColourCommon", "ShaderNodeTree")
         ctx = NodeContext(hull_common, (-400, 0))
         save_pos = ctx.pos
         group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
-        hull_common.inputs.new("NodeSocketColor", "Color")
+        hull_common.inputs.new("NodeSocketColor", "Colour")
         hull_common.inputs.new("NodeSocketFloat", "Grunge")
         ctx.step_down(100)
         strength_fanout = ctx.node("NodeReroute", ctx.step_across(100))
@@ -287,7 +287,7 @@ def create_materials(parms) :
         ctx.link(scalarize.outputs[0], invert2.inputs[1])
         ctx.pos = (ctx.pos[0], save_pos[1])
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
-        hull_common.outputs.new("NodeSocketColor", "Color")
+        hull_common.outputs.new("NodeSocketColor", "Colour")
         ctx.link(mix.outputs[0], group_output.inputs[0])
         hull_common.outputs.new("NodeSocketFloat", "Grunge")
         ctx.link(invert2.outputs[0], group_output.inputs[1])
@@ -297,15 +297,15 @@ def create_materials(parms) :
         group_output.inputs[1].name = hull_common.outputs[1].name
         deselect_all(hull_common)
         return hull_common
-    #end define_hull_color_common
+    #end define_hull_colour_common
 
-    hull_color_common = define_hull_color_common()
+    hull_colour_common = define_hull_colour_common()
 
-    def create_texture(ctx, filename, use_alpha, is_color) :
+    def create_texture(ctx, filename, use_alpha, is_colour) :
         # Creates an image texture node given filename relative to my
         # “textures” subdirectory. Returns the output terminal to be linked
         # to wherever the texture colour is needed.
-        img = load_image(filename, use_alpha, is_color)
+        img = load_image(filename, use_alpha, is_colour)
         coords = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         coords.node_tree = tex_coords_common
         tex = ctx.node("ShaderNodeTexImage", ctx.step_across(300))
@@ -325,7 +325,7 @@ def create_materials(parms) :
             ctx,
             filename = "hull_normal.png",
             use_alpha = True,
-            is_color = False
+            is_colour = False
           )
         normal_map = ctx.node("ShaderNodeNormalMap", ctx.step_across(200))
         ctx.link(tex_out, normal_map.inputs["Color"])
@@ -346,11 +346,11 @@ def create_materials(parms) :
         hull_mat_common = bpy.data.node_groups.new("SpaceShip.HullCommon", "ShaderNodeTree")
         ctx = NodeContext(hull_mat_common, (-350, 0))
         group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
-        hull_mat_common.inputs.new("NodeSocketColor", "Color")
+        hull_mat_common.inputs.new("NodeSocketColor", "Colour")
         save_pos = ctx.pos
-        color_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
-        color_mix.node_tree = hull_color_common
-        ctx.link(group_input.outputs[0], color_mix.inputs["Color"])
+        colour_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
+        colour_mix.node_tree = hull_colour_common
+        ctx.link(group_input.outputs[0], colour_mix.inputs["Colour"])
         normal_map = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         normal_map.node_tree = normals_common
         ctx.pos = (ctx.pos[0], save_pos[1])
@@ -360,12 +360,12 @@ def create_materials(parms) :
         ctx.link(normal_map.outputs[0], normals_fanout.inputs[0])
         ctx.pos = (ctx.pos[0], save_pos[1])
         save_pos = ctx.pos
-        color_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_down(200))
-        ctx.link(color_mix.outputs[0], color_shader.inputs["Color"])
-        ctx.link(normals_fanout.outputs[0], color_shader.inputs["Normal"])
+        colour_shader = ctx.node("ShaderNodeBsdfDiffuse", ctx.step_down(200))
+        ctx.link(colour_mix.outputs[0], colour_shader.inputs["Color"])
+        ctx.link(normals_fanout.outputs[0], colour_shader.inputs["Normal"])
         grunge_mix = ctx.node("ShaderNodeMath", ctx.step_down(200))
         grunge_mix.operation = "MULTIPLY"
-        ctx.link(color_mix.outputs[1], grunge_mix.inputs[0])
+        ctx.link(colour_mix.outputs[1], grunge_mix.inputs[0])
         grunge_mix.inputs[1].default_value = 0.1
         shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
         shiny.inputs["Roughness"].default_value = 0.5
@@ -373,7 +373,7 @@ def create_materials(parms) :
         ctx.pos = (ctx.pos[0], save_pos[1])
         mix_shader = ctx.node("ShaderNodeMixShader", ctx.step_across(200))
         ctx.link(grunge_mix.outputs[0], mix_shader.inputs[0])
-        ctx.link(color_shader.outputs[0], mix_shader.inputs[1])
+        ctx.link(colour_shader.outputs[0], mix_shader.inputs[1])
         ctx.link(shiny.outputs[0], mix_shader.inputs[2])
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
         hull_mat_common.outputs.new("NodeSocketShader", "Shader")
@@ -383,12 +383,12 @@ def create_materials(parms) :
 
     hull_mat_common = define_hull_mat_common()
 
-    def set_hull_mat_basics(mat, base_color) :
+    def set_hull_mat_basics(mat, base_colour) :
         # Sets some basic properties for a hull material.
         ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
         mat_base = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         mat_base.node_tree = hull_mat_common
-        mat_base.inputs[0].default_value = tuple(base_color) + (1,)
+        mat_base.inputs[0].default_value = tuple(base_colour) + (1,)
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(mat_base.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
@@ -399,7 +399,7 @@ def create_materials(parms) :
         save1_pos = ctx.pos
         mat_base = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         mat_base.node_tree = hull_mat_common
-        mat_base.inputs[0].default_value = tuple(parms.hull_base_color) + (1,)
+        mat_base.inputs[0].default_value = tuple(parms.hull_base_colour) + (1,)
         ctx.pos = save1_pos
         ctx.step_down(200)
         # Add an emissive layer that lights up the windows
@@ -408,13 +408,13 @@ def create_materials(parms) :
             ctx,
             filename = "hull_lights_emit.png",
             use_alpha = False,
-            is_color = True
+            is_colour = True
           )
         save2_pos = ctx.pos
         ctx.step_down(300)
         ctx.step_across(-200)
         grunge_source = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-        grunge_source.node_tree = hull_color_common
+        grunge_source.node_tree = hull_colour_common
         ctx.pos = (ctx.pos[0], save2_pos[1])
         grunge_mix = ctx.node("ShaderNodeMath", ctx.step_across(200))
         grunge_mix.operation = "MULTIPLY"
@@ -425,7 +425,7 @@ def create_materials(parms) :
         ctx.link(grunge_mix.outputs[0], brighter.inputs[0])
         brighter.inputs[1].default_value = 2.0
         light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
-        light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
+        light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_colour) + (1,)
         ctx.link(brighter.outputs[0], light_shader.inputs["Strength"])
         ctx.pos = (ctx.pos[0], save1_pos[1])
         add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
@@ -436,11 +436,11 @@ def create_materials(parms) :
         deselect_all(ctx.graph)
     #end setup_hull_lights
 
-    def set_hull_mat_emissive(mat, color, strength) :
+    def set_hull_mat_emissive(mat, colour, strength) :
         # does common setup for very basic emissive hull materials (engines, landing discs)
         ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
         emit = ctx.node("ShaderNodeEmission", ctx.step_across(200))
-        emit.inputs["Color"].default_value = tuple(color) + (1,)
+        emit.inputs["Color"].default_value = tuple(colour) + (1,)
         emit.inputs["Strength"].default_value = strength
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(emit.outputs[0], material_output.inputs[0])
@@ -457,7 +457,7 @@ def create_materials(parms) :
     #end for
 
     # Build the hull texture
-    set_hull_mat_basics(materials[MATERIAL.HULL], parms.hull_base_color)
+    set_hull_mat_basics(materials[MATERIAL.HULL], parms.hull_base_colour)
 
     setup_hull_lights(materials[MATERIAL.HULL_LIGHTS])
 
@@ -465,25 +465,25 @@ def create_materials(parms) :
     set_hull_mat_basics \
       (
         materials[MATERIAL.HULL_DARK],
-        tuple(parms.hull_darken * x for x in parms.hull_base_color[:3])
+        tuple(parms.hull_darken * x for x in parms.hull_base_colour[:3])
       )
 
     # build the metallic material
     ctx = NodeContext(materials[MATERIAL.HULL_METALLIC].node_tree, (-200, 0), clear = True)
-    color_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-    color_mix.node_tree = hull_color_common
-    color_mix.inputs["Color"].default_value = hls_to_rgb(h = 0.091, l = 0.9, s = 0.1) + (1,)
+    colour_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+    colour_mix.node_tree = hull_colour_common
+    colour_mix.inputs["Colour"].default_value = hls_to_rgb(h = 0.091, l = 0.9, s = 0.1) + (1,)
     shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
-    ctx.link(color_mix.outputs[0], shiny.inputs["Color"])
+    ctx.link(colour_mix.outputs[0], shiny.inputs["Color"])
     shiny.inputs["Roughness"].default_value = 0.4
     material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
     ctx.link(shiny.outputs[0], material_output.inputs[0])
 
     # Build the exhaust_burn texture
-    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], parms.glow_color, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], parms.glow_colour, 1.0)
 
     # Build the glow_disc texture
-    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], parms.glow_color, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], parms.glow_colour, 1.0)
 
     return materials
 #end create_materials
@@ -518,30 +518,30 @@ class parms_defaults :
     allow_vertical_symmetry = False
     add_bevel_modifier = True
     create_materials = True
-    hull_base_color = (0.5, 0.5, 0.5)
+    hull_base_colour = (0.5, 0.5, 0.5)
     hull_darken = 0.3
-    hull_emissive_color = (0.75, 0.75, 0.75)
-    glow_color = (1, 1, 1)
+    hull_emissive_colour = (0.75, 0.75, 0.75)
+    glow_colour = (1, 1, 1)
     grunge_factor = 0.5
 #end parms_defaults
 
-def randomize_colors(parms, mat_random) :
-    # Choose a base color for the spaceship hull
-    parms.hull_base_color = hls_to_rgb \
+def randomize_colours(parms, mat_random) :
+    # Choose a base colour for the spaceship hull
+    parms.hull_base_colour = hls_to_rgb \
       (
         h = mat_random.random(),
         l = mat_random.uniform(0.05, 0.5),
         s = mat_random.uniform(0, 0.25)
       )
-    parms.hull_emissive_color = hls_to_rgb \
+    parms.hull_emissive_colour = hls_to_rgb \
       (
         h = mat_random.random(),
         l = mat_random.uniform(0.5, 1),
         s = mat_random.uniform(0, 0.5)
       )
-    # Choose a glow color for the exhaust + glow discs
-    parms.glow_color = hls_to_rgb(h = mat_random.random(), l = mat_random.uniform(0.5, 1), s = 1)
-#end randomize_colors
+    # Choose a glow colour for the exhaust + glow discs
+    parms.glow_colour = hls_to_rgb(h = mat_random.random(), l = mat_random.uniform(0.5, 1), s = 1)
+#end randomize_colours
 
 def generate_spaceship(parms) :
     # Generates a textured spaceship mesh and returns the object.

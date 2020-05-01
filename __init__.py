@@ -112,11 +112,11 @@ class GenerateSpaceship(bpy.types.Operator) :
         default = False,
         name = "Show Materials Details"
       )
-    hull_base_color : bpy.props.FloatVectorProperty \
+    hull_base_colour : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
-        default = df.hull_base_color,
-        name = "Hull Base Color"
+        default = df.hull_base_colour,
+        name = "Hull Base Colour"
       )
     hull_darken : bpy.props.FloatProperty \
       (
@@ -125,17 +125,17 @@ class GenerateSpaceship(bpy.types.Operator) :
         max = 1,
         name = "Hull Darken Factor"
       )
-    hull_emissive_color : bpy.props.FloatVectorProperty \
+    hull_emissive_colour : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
-        default = df.hull_emissive_color,
-        name = "Window Emissive Color"
+        default = df.hull_emissive_colour,
+        name = "Window Emissive Colour"
       )
-    glow_color : bpy.props.FloatVectorProperty \
+    glow_colour : bpy.props.FloatVectorProperty \
       (
         subtype = "COLOR",
-        default = df.glow_color,
-        name = "Engine/Disc Glow Color"
+        default = df.glow_colour,
+        name = "Engine/Disc Glow Colour"
       )
     grunge_factor : bpy.props.FloatProperty \
       (
@@ -177,10 +177,10 @@ class GenerateSpaceship(bpy.types.Operator) :
             row.prop(self, "create_materials", text = "Create Materials")
             row.prop(self, "show_materials_details", text = "Show Details")
             if self.show_materials_details :
-                sub.prop(self, "hull_base_color", text = "Hull Base")
+                sub.prop(self, "hull_base_colour", text = "Hull Base")
                 sub.prop(self, "hull_darken", text = "Hull Darken")
-                sub.prop(self, "hull_emissive_color", text = "Hull Emissive")
-                sub.prop(self, "glow_color", text = "Engine/Disc Glow")
+                sub.prop(self, "hull_emissive_colour", text = "Hull Emissive")
+                sub.prop(self, "glow_colour", text = "Engine/Disc Glow")
                 sub.prop(self, "grunge_factor", text = "Grunge")
             #end if
         else :
@@ -196,7 +196,7 @@ class GenerateSpaceship(bpy.types.Operator) :
           # default. Users can always replace seeds with
           # anything they like.
         self.geom_ranseed = str(random.randrange(maxseed))
-        spaceship_generator.randomize_colors(self, random.Random())
+        spaceship_generator.randomize_colours(self, random.Random())
         spaceship_generator.generate_spaceship(self)
         return {"FINISHED"}
     #end invoke
