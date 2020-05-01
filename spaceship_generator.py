@@ -341,12 +341,16 @@ def create_materials(parms) :
 
     normals_common = define_normals_common()
 
-    def hull_mat_common(ctx, base_color) :
-        # common setup for various hull materials.
+    def define_hull_mat_common() :
+        # defines a common node group defining characteristics of most hull materials.
+        hull_mat_common = bpy.data.node_groups.new("SpaceShip.HullCommon", "ShaderNodeTree")
+        ctx = NodeContext(hull_mat_common, (-350, 0))
+        group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
+        hull_mat_common.inputs.new("NodeSocketColor", "Color")
         save_pos = ctx.pos
         color_mix = ctx.node("ShaderNodeGroup", ctx.step_down(200))
         color_mix.node_tree = hull_color_common
-        color_mix.inputs["Color"].default_value = tuple(base_color) + (1,)
+        ctx.link(group_input.outputs[0], color_mix.inputs["Color"])
         normal_map = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         normal_map.node_tree = normals_common
         ctx.pos = (ctx.pos[0], save_pos[1])
@@ -371,26 +375,33 @@ def create_materials(parms) :
         ctx.link(grunge_mix.outputs[0], mix_shader.inputs[0])
         ctx.link(color_shader.outputs[0], mix_shader.inputs[1])
         ctx.link(shiny.outputs[0], mix_shader.inputs[2])
-        return mix_shader.outputs[0]
-    #end hull_mat_common
+        group_output = ctx.node("NodeGroupOutput", ctx.step_across(200))
+        hull_mat_common.outputs.new("NodeSocketShader", "Shader")
+        ctx.link(mix_shader.outputs[0], group_output.inputs[0])
+        return hull_mat_common
+    #end define_hull_mat_common
+
+    hull_mat_common = define_hull_mat_common()
 
     def set_hull_mat_basics(mat, base_color) :
         # Sets some basic properties for a hull material.
-        ctx = NodeContext(mat.node_tree, (-450, 0), clear = True)
-        shader_output = hull_mat_common(ctx, base_color)
+        ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
+        mat_base = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        mat_base.node_tree = hull_mat_common
+        mat_base.inputs[0].default_value = tuple(base_color) + (1,)
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
-        ctx.link(shader_output, material_output.inputs[0])
+        ctx.link(mat_base.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
     #end set_hull_mat_basics
 
     def setup_hull_lights(mat) :
         ctx = NodeContext(mat.node_tree, (-600, 0), clear = True)
         save1_pos = ctx.pos
-        base_output = hull_mat_common(ctx, parms.hull_base_color)
-        save2_pos = ctx.pos
+        mat_base = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        mat_base.node_tree = hull_mat_common
+        mat_base.inputs[0].default_value = tuple(parms.hull_base_color) + (1,)
         ctx.pos = save1_pos
-        ctx.step_across(-450)
-        ctx.step_down(650)
+        ctx.step_down(200)
         # Add an emissive layer that lights up the windows
         window_light = create_texture \
           (
@@ -399,12 +410,12 @@ def create_materials(parms) :
             use_alpha = False,
             is_color = True
           )
-        save1_pos = ctx.pos
+        save2_pos = ctx.pos
         ctx.step_down(300)
         ctx.step_across(-200)
         grunge_source = ctx.node("ShaderNodeGroup", ctx.step_across(200))
         grunge_source.node_tree = hull_color_common
-        ctx.pos = (ctx.pos[0], save1_pos[1])
+        ctx.pos = (ctx.pos[0], save2_pos[1])
         grunge_mix = ctx.node("ShaderNodeMath", ctx.step_across(200))
         grunge_mix.operation = "MULTIPLY"
         ctx.link(window_light, grunge_mix.inputs[0])
@@ -416,9 +427,9 @@ def create_materials(parms) :
         light_shader = ctx.node("ShaderNodeEmission", ctx.step_across(200))
         light_shader.inputs["Color"].default_value = tuple(parms.hull_emissive_color) + (1,)
         ctx.link(brighter.outputs[0], light_shader.inputs["Strength"])
-        ctx.pos = save2_pos
+        ctx.pos = (ctx.pos[0], save1_pos[1])
         add_shader = ctx.node("ShaderNodeAddShader", ctx.step_across(200))
-        ctx.link(base_output, add_shader.inputs[0])
+        ctx.link(mat_base.outputs[0], add_shader.inputs[0])
         ctx.link(light_shader.outputs[0], add_shader.inputs[1])
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(add_shader.outputs[0], material_output.inputs[0])
