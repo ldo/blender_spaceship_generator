@@ -239,6 +239,8 @@ class MATERIAL(enum.IntEnum) :
 
 #end MATERIAL
 
+grunge_socket_name = "Grunge"
+
 def create_materials(parms) :
     # Creates all our materials and returns them as a list.
 
@@ -247,7 +249,7 @@ def create_materials(parms) :
         hull_dark = tuple(parms.hull_darken * x for x in parms.hull_base_colour[:3])
         colour_scheme = bpy.data.node_groups.new("SpaceShip.ColourScheme", "ShaderNodeTree")
         ctx = NodeContext(colour_scheme, (100, 0))
-        group_output = ctx.node("NodeGroupOutput", ctx.step_across(-200))
+        group_output = ctx.node("NodeGroupOutput", ctx.step_across(-300))
         ctx.step_down(round(-100 * len(MATERIAL.__members__)))
         for i, (mat, colour) in \
             enumerate((
@@ -264,6 +266,17 @@ def create_materials(parms) :
             colour_node.outputs[0].default_value = tuple(colour)[:3] + (1,)
             colour_scheme.outputs.new("NodeSocketColor", mat.name)
             ctx.link(colour_node.outputs[0], group_output.inputs[i])
+        #end for
+        for i, (val, name) in \
+            enumerate((
+                (parms.grunge_factor, grunge_socket_name),
+            )) \
+        :
+            val_node = ctx.node("ShaderNodeValue", ctx.step_down(200))
+            val_node.label = name
+            val_node.outputs[0].default_value = val
+            colour_scheme.outputs.new("NodeSocketFloat", name)
+            ctx.link(val_node.outputs[0], group_output.inputs[i + len(MATERIAL.__members__)])
         #end for
         deselect_all(colour_scheme)
         return colour_scheme
@@ -292,16 +305,16 @@ def create_materials(parms) :
         # an input colour to produce an output colour.
         hull_common = bpy.data.node_groups.new("SpaceShip.HullColourCommon", "ShaderNodeTree")
         ctx = NodeContext(hull_common, (-400, 0))
-        save_pos = ctx.pos
-        group_input = ctx.node("NodeGroupInput", ctx.step_across(200))
+        group_input = ctx.node("NodeGroupInput", ctx.step_down(100))
         hull_common.inputs.new("NodeSocketColor", "Colour")
-        hull_common.inputs.new("NodeSocketFloat", "Grunge")
-        ctx.step_down(100)
+        save_pos = ctx.pos
+        colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        colours.node_tree = colour_scheme
+        ctx.step_down(150)
         strength_fanout = ctx.node("NodeReroute", ctx.step_across(100))
-        ctx.link(group_input.outputs[1], strength_fanout.inputs[0])
+        ctx.link(colours.outputs[grunge_socket_name], strength_fanout.inputs[0])
         ctx.pos = save_pos
-        ctx.step_down(200)
-        hull_common.inputs[1].default_value = parms.grunge_factor
+        ctx.step_down(250)
         dirty = ctx.node("ShaderNodeTexNoise", ctx.step_across(200))
         dirty.inputs["Scale"].default_value = 20
         dirtier = ctx.node("ShaderNodeBrightContrast", ctx.step_across(200))
@@ -336,7 +349,6 @@ def create_materials(parms) :
         hull_common.outputs.new("NodeSocketFloat", "Grunge")
         ctx.link(invert2.outputs[0], group_output.inputs[1])
         group_input.outputs[0].name = hull_common.inputs[0].name
-        group_input.outputs[1].name = hull_common.inputs[1].name
         group_output.inputs[0].name = hull_common.outputs[0].name
         group_output.inputs[1].name = hull_common.outputs[1].name
         deselect_all(hull_common)
@@ -449,7 +461,7 @@ def create_materials(parms) :
         mat_base.node_tree = hull_mat_common
         ctx.link(colours.outputs[MATERIAL.HULL.name], mat_base.inputs[0])
         ctx.pos = save1_pos
-        ctx.step_down(200)
+        ctx.step_down(250)
         # Add an emissive layer that lights up the windows
         window_light = create_texture \
           (
