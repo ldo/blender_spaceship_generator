@@ -244,9 +244,18 @@ grunge_socket_name = "Grunge"
 def create_materials(parms) :
     # Creates all our materials and returns them as a list.
 
+    # needed for defining viewport appearance of materials with Workbench renderer
+    shiny_amt = 0.1
+    shiny_rough = 0.5
+    metallic_rough = 0.4
+    hull_dark_colour = None
+    metallic_colour = None
+
     def define_colour_scheme() :
         # defines the common colour scheme.
-        hull_dark = tuple(parms.hull_darken * x for x in parms.hull_base_colour[:3])
+        nonlocal hull_dark_colour, metallic_colour
+        hull_dark_colour = tuple(parms.hull_darken * x for x in parms.hull_base_colour[:3])
+        metallic_colour = hls_to_rgb(h = 0.091, l = 0.9, s = 0.1) + (1,)
         colour_scheme = bpy.data.node_groups.new("SpaceShip.ColourScheme", "ShaderNodeTree")
         ctx = NodeContext(colour_scheme, (100, 0))
         group_output = ctx.node("NodeGroupOutput", ctx.step_across(-300))
@@ -255,8 +264,8 @@ def create_materials(parms) :
             enumerate((
                 (MATERIAL.HULL, parms.hull_base_colour),
                 (MATERIAL.HULL_LIGHTS, parms.hull_emissive_colour),
-                (MATERIAL.HULL_DARK, hull_dark),
-                (MATERIAL.HULL_METALLIC, hls_to_rgb(h = 0.091, l = 0.9, s = 0.1) + (1,)),
+                (MATERIAL.HULL_DARK, hull_dark_colour),
+                (MATERIAL.HULL_METALLIC, metallic_colour),
                 (MATERIAL.EXHAUST_BURN, parms.glow_colour),
                 (MATERIAL.GLOW_DISC, parms.glow_colour),
             )) \
@@ -421,9 +430,9 @@ def create_materials(parms) :
         grunge_mix = ctx.node("ShaderNodeMath", ctx.step_down(200))
         grunge_mix.operation = "MULTIPLY"
         ctx.link(colour_mix.outputs[1], grunge_mix.inputs[0])
-        grunge_mix.inputs[1].default_value = 0.1
+        grunge_mix.inputs[1].default_value = shiny_amt
         shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
-        shiny.inputs["Roughness"].default_value = 0.5
+        shiny.inputs["Roughness"].default_value = shiny_rough
         ctx.link(normals_fanout.outputs[0], shiny.inputs["Normal"])
         ctx.pos = (ctx.pos[0], save_pos[1])
         mix_shader = ctx.node("ShaderNodeMixShader", ctx.step_across(200))
@@ -439,7 +448,7 @@ def create_materials(parms) :
 
     hull_mat_common = define_hull_mat_common()
 
-    def set_hull_mat_basics(mat, base_colour) :
+    def set_hull_mat_basics(mat, base_colour, viewport_colour) :
         # Sets some basic properties for a hull material.
         ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
         colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
@@ -450,9 +459,30 @@ def create_materials(parms) :
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(mat_base.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
+        mat.diffuse_color = tuple(viewport_colour)[:3] + (1,)
+        mat.specular_intensity = shiny_amt
+        mat.roughness = shiny_rough
     #end set_hull_mat_basics
 
-    def setup_hull_lights(mat) :
+    def set_metallic(mat, colour) :
+        ctx = NodeContext(mat.node_tree, (-200, 0), clear = True)
+        colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        colours.node_tree = colour_scheme
+        colour_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
+        colour_mix.node_tree = hull_colour_common
+        ctx.link(colours.outputs[colour.name], colour_mix.inputs["Colour"])
+        shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
+        ctx.link(colour_mix.outputs[0], shiny.inputs["Color"])
+        shiny.inputs["Roughness"].default_value = metallic_rough
+        material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
+        ctx.link(shiny.outputs[0], material_output.inputs[0])
+        deselect_all(ctx.graph)
+        mat.diffuse_color = tuple(metallic_colour)[:3] + (1,)
+        mat.metallic = 1.0
+        mat.roughness = metallic_rough
+    #end set_metallic
+
+    def setup_hull_lights(mat, viewport_colour) :
         ctx = NodeContext(mat.node_tree, (-600, 0), clear = True)
         save1_pos = ctx.pos
         colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
@@ -494,9 +524,12 @@ def create_materials(parms) :
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(add_shader.outputs[0], material_output.inputs[0])
         deselect_all(ctx.graph)
+        mat.diffuse_color = tuple(viewport_colour)[:3] + (1,)
+        mat.specular_intensity = shiny_amt
+        mat.roughness = shiny_rough
     #end setup_hull_lights
 
-    def set_hull_mat_emissive(mat, colour, strength) :
+    def set_hull_mat_emissive(mat, colour, strength, viewport_colour) :
         # does common setup for very basic emissive hull materials (engines, landing discs)
         ctx = NodeContext(mat.node_tree, (-300, 0), clear = True)
         colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
@@ -507,6 +540,7 @@ def create_materials(parms) :
         material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
         ctx.link(emit.outputs[0], material_output.inputs[0])
         deselect_all(mat.node_tree)
+        mat.diffuse_color = tuple(viewport_colour)[:3] + (1,)
     #end set_hull_mat_emissive
 
 #begin create_materials
@@ -519,32 +553,21 @@ def create_materials(parms) :
     #end for
 
     # Build the hull texture
-    set_hull_mat_basics(materials[MATERIAL.HULL], MATERIAL.HULL)
+    set_hull_mat_basics(materials[MATERIAL.HULL], MATERIAL.HULL, parms.hull_base_colour)
 
-    setup_hull_lights(materials[MATERIAL.HULL_LIGHTS])
+    setup_hull_lights(materials[MATERIAL.HULL_LIGHTS], parms.hull_emissive_colour)
 
     # Build the hull_dark texture
-    set_hull_mat_basics(materials[MATERIAL.HULL_DARK], MATERIAL.HULL_DARK)
+    set_hull_mat_basics(materials[MATERIAL.HULL_DARK], MATERIAL.HULL_DARK, hull_dark_colour)
 
     # build the metallic material
-    ctx = NodeContext(materials[MATERIAL.HULL_METALLIC].node_tree, (-200, 0), clear = True)
-    colours = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-    colours.node_tree = colour_scheme
-    colour_mix = ctx.node("ShaderNodeGroup", ctx.step_across(200))
-    colour_mix.node_tree = hull_colour_common
-    ctx.link(colours.outputs[MATERIAL.HULL_METALLIC.name], colour_mix.inputs["Colour"])
-    shiny = ctx.node("ShaderNodeBsdfGlossy", ctx.step_across(200))
-    ctx.link(colour_mix.outputs[0], shiny.inputs["Color"])
-    shiny.inputs["Roughness"].default_value = 0.4
-    material_output = ctx.node("ShaderNodeOutputMaterial", ctx.step_across(200))
-    ctx.link(shiny.outputs[0], material_output.inputs[0])
-    deselect_all(ctx.graph)
+    set_metallic(materials[MATERIAL.HULL_METALLIC], MATERIAL.HULL_METALLIC)
 
     # Build the exhaust_burn texture
-    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], MATERIAL.EXHAUST_BURN, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.EXHAUST_BURN], MATERIAL.EXHAUST_BURN, 1.0, parms.glow_colour)
 
     # Build the glow_disc texture
-    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], MATERIAL.GLOW_DISC, 1.0)
+    set_hull_mat_emissive(materials[MATERIAL.GLOW_DISC], MATERIAL.GLOW_DISC, 1.0, parms.glow_colour)
 
     return materials
 #end create_materials
