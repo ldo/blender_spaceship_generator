@@ -1,0 +1,3 @@
+include __init__.py spaceship_generator.py
+include icons/*.png
+include textures/*.png
