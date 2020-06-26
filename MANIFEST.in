@@ -1,8 +1,8 @@
 # to create release archive for «tag», use command
 #
-#     make-snapshot -m MANIFEST.in add_mesh_SpaceshipGenerator «tag»
+#     zip-dist -m MANIFEST.in add_mesh_SpaceshipGenerator «tag»
 #
-# where make-snapshot comes from <https://github.com/ldo/git-useful>
+# where zip-dist comes from <https://github.com/ldo/git-useful>
 
 include __init__.py spaceship_generator.py
 include icons/*.png
