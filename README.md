@@ -40,7 +40,13 @@ Tips and Tricks
 but you can replace these with any string. Different seeds are chosen every time you create
 a new spaceship, but they do not change when you edit the parameters for regenerating the
 current spaceship (unless you change them).
-* You can replace the textures with your own ones. `hull_normal.png` is a normal map that adds extra surface "greebles". `hull_lights_emit.png` is an emissive texture to make the windows glow in darkness.
+* Materials are generated with heavy use of node groups, to allow easy customization.
+For example, all colours are derived from a common colour-scheme node group, so changes
+made here can affect all relevant materials for a single spaceship at once. The node groups
+work across both Eevee and Cycles renderers.
+* You can go further, and replace the textures with your own ones. `hull_normal.png` is a
+normal map that adds extra surface detail “greebles”. `hull_lights_emit.png` defines the positions
+of the windows; it is used as an emissive texture to make them glow.
 
 Credits
 -------
