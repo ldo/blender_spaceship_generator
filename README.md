@@ -40,7 +40,7 @@ Tips and Tricks
 but you can replace these with any string. Different seeds are chosen every time you create
 a new spaceship, but they do not change when you edit the parameters for regenerating the
 current spaceship (unless you change them).
-* You can replace the textures with your own ones. All textures are applied using global-space cube UVs. `hull_normal.png` is a normal map that adds extra surface "greebles". `hull_lights_diffuse.png` is an additive diffuse texture to set the color of the window lights. `hull_lights_emit.png` is an emissive texture to make the windows glow in darkness.
+* You can replace the textures with your own ones. `hull_normal.png` is a normal map that adds extra surface "greebles". `hull_lights_emit.png` is an emissive texture to make the windows glow in darkness.
 
 Credits
 -------
