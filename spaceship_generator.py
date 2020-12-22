@@ -1128,7 +1128,7 @@ def generate_spaceship(parms) :
         #end if abs(face.normal.x) > 0.5
     #end for face in bm.faces[:]
 
-    # Add some large asynmmetrical sections of the hull that stick out
+    # Add some large asymmetrical sections of the hull that stick out
     if (
             parms.create_asymmetry_segments
         and
