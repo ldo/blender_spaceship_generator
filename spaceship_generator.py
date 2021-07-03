@@ -34,7 +34,7 @@ def load_image(filename, use_alpha, is_colour) :
     filepath = resource_path("textures", filename)
     image = bpy.data.images.load(filepath)
     image.alpha_mode = ("NONE", "STRAIGHT")[use_alpha]
-    image.colorspace_settings.name = ("Linear", "sRGB")[is_colour]
+    image.colorspace_settings.name = ("Non-Color", "sRGB")[is_colour]
     image.pack()
     # wipe all traces of original addon file path
     image.filepath = "//textures/%s" % filename
