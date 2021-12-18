@@ -2,8 +2,8 @@ bl_info = \
     {
         "name" : "Spaceship Generator",
         "author" : "Michael Davies, Lawrence D'Oliveiro",
-        "version" : (1, 6, 2),
-        "blender" : (2, 82, 0),
+        "version" : (1, 6, 3),
+        "blender" : (3, 0, 0),
         "location" : "View3D > Add > Mesh",
         "description" : "Procedurally generate 3D spaceships from a random seed.",
         "wiki_url" : "https://github.com/a1studmuffin/SpaceshipGenerator/blob/master/README.md",

@@ -750,8 +750,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = num_segments,
-                    diameter1 = cylinder_size,
-                    diameter2 = cylinder_size,
+                    radius1 = cylinder_size,
+                    radius2 = cylinder_size,
                     depth = cylinder_depth,
                     matrix = cylinder_matrix
                   )
@@ -807,8 +807,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = num_segments,
-                    diameter1 = weapon_size * 0.9,
-                    diameter2 = weapon_size,
+                    radius1 = weapon_size * 0.9,
+                    radius2 = weapon_size,
                     depth = weapon_depth,
                     matrix = face_matrix
                   )
@@ -819,8 +819,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = num_segments,
-                    diameter1 = weapon_size * 0.6,
-                    diameter2 = weapon_size * 0.5,
+                    radius1 = weapon_size * 0.6,
+                    radius2 = weapon_size * 0.5,
                     depth = weapon_depth * 2,
                     matrix =
                             face_matrix
@@ -836,8 +836,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = num_segments,
-                    diameter1 = weapon_size * 0.5,
-                    diameter2 = weapon_size * 0.6,
+                    radius1 = weapon_size * 0.5,
+                    radius2 = weapon_size * 0.6,
                     depth = weapon_depth * 2,
                     matrix =
                             face_matrix
@@ -862,8 +862,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = 8,
-                    diameter1 = weapon_size * 0.4,
-                    diameter2 = weapon_size * 0.4,
+                    radius1 = weapon_size * 0.4,
+                    radius2 = weapon_size * 0.4,
                     depth = weapon_depth * 5,
                     matrix = turret_house_mat
                   )
@@ -874,8 +874,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = 8,
-                    diameter1 = weapon_size * 0.1,
-                    diameter2 = weapon_size * 0.1,
+                    radius1 = weapon_size * 0.1,
+                    radius2 = weapon_size * 0.1,
                     depth = weapon_depth * 6,
                     matrix =
                             turret_house_mat
@@ -888,8 +888,8 @@ def generate_spaceship(parms) :
                     cap_ends = True,
                     cap_tris = False,
                     segments = 8,
-                    diameter1 = weapon_size * 0.1,
-                    diameter2 = weapon_size * 0.1,
+                    radius1 = weapon_size * 0.1,
+                    radius2 = weapon_size * 0.1,
                     depth = weapon_depth * 6,
                     matrix =
                             turret_house_mat
@@ -916,7 +916,7 @@ def generate_spaceship(parms) :
           (
             bm,
             subdivisions = 3,
-            diameter = sphere_size,
+            radius = sphere_size,
             matrix = sphere_matrix
           )
         for vert in result["verts"] :
@@ -950,7 +950,7 @@ def generate_spaceship(parms) :
                     face_size = math.sqrt(face.calc_area())
                     depth = geom_random.uniform(0.1, 1.5) * face_size
                     depth_short = depth * geom_random.uniform(0.02, 0.15)
-                    base_diameter = geom_random.uniform(0.005, 0.05)
+                    base_radius = geom_random.uniform(0.005, 0.05)
                     material_index = MATERIAL.HULL_METALLIC
 
                     # Spire
@@ -961,8 +961,8 @@ def generate_spaceship(parms) :
                         cap_ends = False,
                         cap_tris = False,
                         segments = num_segments,
-                        diameter1 = 0,
-                        diameter2 = base_diameter,
+                        radius1 = 0,
+                        radius2 = base_radius,
                         depth = depth,
                         matrix = get_face_matrix(face, pos + face.normal * depth * 0.5)
                       )
@@ -979,8 +979,8 @@ def generate_spaceship(parms) :
                         cap_ends = True,
                         cap_tris = False,
                         segments = num_segments,
-                        diameter1 = base_diameter * geom_random.uniform(1, 1.5),
-                        diameter2 = base_diameter * geom_random.uniform(1.5, 2),
+                        radius1 = base_radius * geom_random.uniform(1, 1.5),
+                        radius2 = base_radius * geom_random.uniform(1.5, 2),
                         depth = depth_short,
                         matrix = get_face_matrix(face, pos + face.normal * depth_short * 0.45)
                       )
@@ -1007,8 +1007,8 @@ def generate_spaceship(parms) :
             cap_ends = True,
             cap_tris = False,
             segments = 32,
-            diameter1 = depth * 3,
-            diameter2 = depth * 4,
+            radius1 = depth * 3,
+            radius2 = depth * 4,
             depth=depth,
             matrix = get_face_matrix(face, face.calc_center_bounds() + face.normal * depth * 0.5)
           )
@@ -1018,8 +1018,8 @@ def generate_spaceship(parms) :
             cap_ends = False,
             cap_tris = False,
             segments = 32,
-            diameter1 = depth * 1.25,
-            diameter2 = depth * 2.25,
+            radius1 = depth * 1.25,
+            radius2 = depth * 2.25,
             depth = 0.0,
             matrix = get_face_matrix(face, face.calc_center_bounds() + face.normal * depth * 1.05)
           )
