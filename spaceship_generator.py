@@ -954,7 +954,7 @@ def generate_spaceship(parms) :
                     material_index = MATERIAL.HULL_METALLIC
 
                     # Spire
-                    num_segments = geom_random.uniform(3, 6)
+                    num_segments = geom_random.randint(3, 6)
                     result = bmesh.ops.create_cone \
                       (
                         bm,
